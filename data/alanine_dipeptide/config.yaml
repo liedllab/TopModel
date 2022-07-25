@@ -1,0 +1,40 @@
+1:
+  amide: trans
+  stereo: 
+    - L
+    - L
+2:
+  amide: trans
+  stereo:
+    - L
+    - D
+3:
+  amide: trans
+  stereo:
+    - D
+    - L
+4:
+  amide: trans
+  stereo:
+    -D
+    -D
+5:
+  amide: cis
+  stereo:
+    - L
+    - L
+6:
+  amide: cis
+  stereo:
+    - L
+    - D
+7:
+  amide: cis
+  stereo:
+    - D
+    - L
+8:
+  amide: cis
+  stereo:
+    - D
+    - D
