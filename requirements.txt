@@ -1,15 +1,20 @@
 attrs==21.4.0
 biopython==1.79
+click==8.1.3
+coverage==6.4.2
 exceptiongroup==1.0.0rc8
 hypothesis==6.53.0
 iniconfig==1.1.1
 numpy==1.23.1
 packaging==21.3
--e git+https://github.com/janikkokot/PDBear@aad1d86ccba7d40185276fa463dedb7e2e0c6577#egg=pdbear
+-e git+https://github.com/janikkokot/PDBear@fdebbe3184b2965ca283e445e8294c79747bdead#egg=pdbear
 pluggy==1.0.0
 py==1.11.0
 pyparsing==3.0.9
 pytest==7.1.2
+pytest-cov==3.0.0
+pytest-cover==3.0.0
+pytest-coverage==0.0
 PyYAML==6.0
 sortedcontainers==2.4.0
 tomli==2.0.1
