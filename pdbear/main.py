@@ -20,16 +20,19 @@ def check_structure(path: str) -> None:
     stereo = ((n, db_info) for n, db_info in enumerate(get_stereo(pdb), 1) \
                     if db_info != "trans")
 
-    print("Errors in chirality: ", end='')
+    click.echo("-"*80)
+    click.echo(click.style("Errors in chirality: ", bold=True))
     for n, _ in chiralities:
-        print(f"res {n}", end=', ')
+        click.echo(click.style(f"res {n}", fg='red') + ", ", nl=False)
 
-
-    print("\nCis amides: ", end='')
+    click.echo("\n"+"-"*80)
+    click.echo(click.style("Cis amides: ", bold=True))
     for n, _ in chiralities:
-        print(f"res {n}-{n+1}", end=', ')
+        click.echo(click.style(f"res {n}-{n+1}", fg='red') + ", ", nl=False)
 
-    print("\nFinished.")
+    click.echo("\n"+"-"*80)
+    click.echo("Program finished as expected.")
+    click.echo("-"*80)
 
 if __name__ == '__main__':
     check_structure()
