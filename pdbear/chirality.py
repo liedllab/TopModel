@@ -2,20 +2,31 @@ import numpy as np
 from Bio.PDB.Structure import Structure
 
 
-def get_chiralities(pdb: Structure) -> list[str]:
-    result = list()
+def get_chiralities(pdb: Structure) -> dict[int, tuple[str, str]]:
+    result = dict()
     for residue in pdb.get_residues():
         atoms = {atom.name : atom.coord for atom in residue.get_atoms()}
-
-        h_vec = atoms['H'] - atoms['CA']
-        rotate_side = get_rotator(h_vec) @ ( atoms['CB'] - atoms['CA'])
-
-        if rotate_side[1] < 0:
-            result.append("L")
-        elif rotate_side[1] > 0:
-            result.append("D")
+        try: 
+            h_vec = atoms['HA'] - atoms['CA']
+        except KeyError:
+            if residue.get_resname() == "GLY":
+                label = "None"
+            else:
+                raise KeyError
         else:
-            raise ValueError("No chiral center found")
+            rotator = get_rotator(h_vec)
+            rotations = dict()
+            for atom in ['N', 'C', 'CB']:
+                rotated_xyz = rotator @ (atoms[atom] - atoms['CA'])
+                rotation = np.arctan2(rotated_xyz[1], rotated_xyz[0])
+                rotations[atom] = rotation
+                rotations[atom] -= rotations['N']
+                rotations[atom] = np.mod(rotations[atom], 2*np.pi)
+
+
+            label = "D" if rotations["C"] < rotations['CB'] else "L"
+        result[residue.get_id()[1]] = residue.get_resname(), label
+            
     return result
 
 

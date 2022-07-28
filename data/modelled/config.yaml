@@ -1,0 +1,7 @@
+output:
+        stereo: None
+sg:
+        stereo: 
+        - 100
+        - 104
+        - 107

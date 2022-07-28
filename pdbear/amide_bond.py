@@ -1,11 +1,11 @@
 from Bio.PDB.Structure import Structure
 import numpy as np
 
-def get_stereo(pdb: Structure) -> list[str]:
+def get_stereo(pdb: Structure) -> dict[int, tuple[str, str, float]]:
     mask = {"N", "CA", "C", "O"}
     atoms = (atom for atom in pdb.get_atoms() if atom.name in mask)
 
-    stereo = list()
+    stereo = dict()
     for atom in atoms:
         if atom.name == 'C':
             try:
@@ -18,16 +18,18 @@ def get_stereo(pdb: Structure) -> list[str]:
                 break
             else:
                 phi = calc_angle(
-                        o.coord - c.coord,
+                        c.coord - o.coord,
                         n.coord - c.coord,
                         ca.coord - n.coord,
                         )
-                if 11*np.pi/6 < phi or phi < np.pi/6:
-                    stereo.append("cis")
-                elif 5*np.pi/6 < phi < 7*np.pi/6:
-                    stereo.append("trans")
+                if 11*np.pi/6 <= phi or phi <= np.pi/6:
+                    label = "c"
+                    label = 't'
                 else:
-                    stereo.append("weird")
+                    label = 't'
+
+                parent = c.get_parent()
+                stereo[parent.get_id()[1]] = (parent, ca.get_parent(), label, phi)
     return stereo
 
 

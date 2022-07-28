@@ -24,7 +24,7 @@ def test_chirality_alanine_dipeptide(n: int):
 
     chiralities = chirality.get_chiralities(pdb)
     target = CONFIG[n]["stereo"]
-    assert chiralities == target
+    assert [chirality for _, chirality in chiralities.values()] == target
 
 if __name__ == '__main__':
     test_alanine()
