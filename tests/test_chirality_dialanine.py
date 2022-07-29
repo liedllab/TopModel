@@ -18,7 +18,7 @@ parser = PDBParser()
 
 @given(
         n = st.integers(min_value=1, max_value=8),
-        res_number = st.integers(min_value=0, max_value=CONFIG["n_res"]),
+        res_number = st.integers(min_value=0, max_value=CONFIG["n_res"]-1),
         )
 def test_chirality_alanine_dipeptide(n: int, res_number: int):
     with warnings.catch_warnings():
@@ -29,5 +29,3 @@ def test_chirality_alanine_dipeptide(n: int, res_number: int):
 
     assert chirality.assign_chirality(residue) == CONFIG[n]["chirality"][res_number]
 
-if __name__ == '__main__':
-    test_alanine()

@@ -1,48 +1,50 @@
+n_res: 2
+
 1:
   amide:
     - trans
-  stereo: 
+  chirality: 
     - L
     - L
 2:
   amide: 
     - trans
-  stereo:
+  chirality:
     - L
     - D
 3:
   amide: 
     - trans
-  stereo:
+  chirality:
     - D
     - L
 4:
   amide: 
     - trans
-  stereo:
+  chirality:
     - D
     - D
 5:
   amide: 
     - cis
-  stereo:
+  chirality:
     - L
     - L
 6:
   amide: 
     - cis
-  stereo:
+  chirality:
     - L
     - D
 7:
   amide: 
     - cis
-  stereo:
+  chirality:
     - D
     - L
 8:
   amide: 
     - cis
-  stereo:
+  chirality:
     - D
     - D
