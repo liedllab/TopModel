@@ -1,7 +1,11 @@
 output:
-        stereo: None
+        pdb: output.pdb
+        res_number: 237
+        d_amino: []
 sg:
-        stereo: 
+        pdb: sg_imgt.pdb
+        res_number: 233
+        d_amino: 
         - 100
         - 104
         - 107
