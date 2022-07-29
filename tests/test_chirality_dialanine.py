@@ -27,5 +27,5 @@ def test_chirality_alanine_dipeptide(n: int, res_number: int):
 
     residue = list(pdb.get_residues())[res_number]
 
-    assert chirality.assign_chirality(residue) == CONFIG[n]["chirality"][res_number]
+    assert chirality.assign_chirality_amino_acid(residue) == CONFIG[n]["chirality"][res_number]
 
