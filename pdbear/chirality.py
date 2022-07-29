@@ -7,7 +7,17 @@ def set_zero_point(values: np.ndarray, zero_point: np.ndarray) -> np.ndarray:
     return values - zero_point
 
 def get_projector(vector: np.ndarray) -> np.ndarray:
-    raise NotImplementedError
+    A = np.array(
+            [vector,
+             [0, 1, 0],
+             [0, 0, 1]]
+            )
+
+
+    q, r = np.linalg.qr(A.T)
+    if np.sign(q.T @ vector)[0] == 1:
+        q = -1 * q
+    return q.T
 
 
 
