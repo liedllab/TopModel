@@ -4,7 +4,7 @@ from Bio.PDB.Structure import Structure
 
 
 def set_zero_point(values: np.ndarray, zero_point: np.ndarray):
-    raise NotImplementedError
+    return values - zero_point
 
 def get_chiralities(pdb: Structure) -> dict[int, tuple[str, str]]:
     result = dict()
