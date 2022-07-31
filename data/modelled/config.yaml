@@ -1,11 +1,13 @@
 output:
         pdb: output.pdb
-        res_number: 237
+        min_res: 1
+        max_res: 236
         d_amino: []
-sg:
-        pdb: sg_imgt.pdb
-        res_number: 233
-        d_amino: 
-        - 100
-        - 104
-        - 107
+# sg:
+#         pdb: sg_imgt.pdb
+#         min_res: 2
+#         max_res: 233
+#         d_amino: 
+#         - 100
+#         - 104
+#         - 107
