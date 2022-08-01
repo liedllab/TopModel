@@ -1,57 +1,33 @@
 from __future__ import annotations
 import numpy as np
 from Bio.PDB.Residue import Residue
-from .logger import logger
+from Bio.PDB import vectors
 
-def set_zero_point(values: np.ndarray, zero_point: np.ndarray) -> np.ndarray:
-    return values - zero_point
+class GlycineException(Exception):
+    """Glycine has no chiral centre"""
 
-def get_transform(vector: np.ndarray) -> np.ndarray:
-    A = np.array(
-            [vector,
-             [0, 1, 0],
-             [0, 0, 1]]
-            )
-
-    q, r = np.linalg.qr(A.T)
-    transform = q.T
-    if np.sign(transform @ vector)[0] == 1:
-        rot = np.array([[-1,0,0],[0,1,0],[0,0,1]])
-        transform = rot @ transform
-    if np.sign(np.linalg.det(transform)) == -1:
-        transform[[1,2]] = transform[[2,1]]
-    return transform
-
-
-def get_theta(position: np.ndarray) -> float:
-    theta = np.arctan2(*reversed(position))
-    normalized_theta = np.mod(theta, 2*np.pi)
-    return normalized_theta
+def get_theta(vec, rotation_matrix) -> float:
+    x, y, _ = vec.left_multiply(rotation_matrix)
+    theta = np.arctan2(y, x)
+    return theta
 
 
 def assign_chirality_amino_acid(residue: Residue) -> str:
-    atoms = {atom.name: atom.coord.copy() for atom in residue.get_atoms() \
-                if atom.name in ('C', 'CA', 'CB', 'N', 'HA')}
-    zero = atoms['CA'].copy()
-    for atom, position in atoms.items():
-        atoms[atom] = set_zero_point(position, zero)
-
-    transformer = get_transform(atoms['HA'])
-    factor = np.sign(np.linalg.det(transformer))
-    transformed_pos = {atom: transformer @ position for atom, position in atoms.items()}
-
-    theta_zero = get_theta(transformed_pos['N'][1:])
-    rotations = {atom : get_theta(position[1:]) - theta_zero \
-                    for atom, position in transformed_pos.items()}
+    CA = residue['CA'].get_vector().copy()
+    atoms = {atom.name: atom.get_vector() - CA  for atom in residue}
     
-    if rotations['C'] < rotations['CB']:
-        chirality = 'L'
-    else:
-        chirality = 'D'
+    try:    
+        transformer = vectors.rotmat(atoms['HA'], vectors.Vector(0,0,-1))
+    except KeyError:
+        if residue.resname == 'GLY':
+            raise GlycineException
+        else:
+            raise KeyError
+
+    theta_zero = get_theta(atoms['N'], transformer)
+    rotations = {name: np.mod(get_theta(vec, transformer) - theta_zero, 2*np.pi) \
+                    for name, vec in atoms.items()}
     
-    logger.warning(
-        f"AminoAcid {residue} has been asigned to be {chirality}\
-            {np.linalg.det(transformer)=}")
+    chirality = 'L' if rotations['C'] < rotations['CB'] else 'D'
     return chirality
-
 
