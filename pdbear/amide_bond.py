@@ -1,47 +1,34 @@
+from collections import defaultdict
 from Bio.PDB.Structure import Structure
+from Bio.PDB.vectors import calc_dihedral
 import numpy as np
 
 def get_stereo(pdb: Structure) -> dict[int, tuple[str, str, float]]:
     mask = {"N", "CA", "C", "O"}
-    atoms = (atom for atom in pdb.get_atoms() if atom.name in mask)
+    bb_iter = (atom for atom in pdb.get_atoms() if atom.name in mask)
+    stereo = defaultdict(list)
+    for atom in bb_iter:
+        while atom.name != 'C':
+            atom = next(bb_iter)
 
-    stereo = dict()
-    for atom in atoms:
-        if atom.name == 'C':
-            try:
-                c = atom
-                o = next(atoms)
-                n = next(atoms)
-                ca = next(atoms)
-                # between = {p.get_id()[1] for p in (c, o, n, ca)}
-            except StopIteration:
-                break
-            else:
-                phi = calc_angle(
-                        c.coord - o.coord,
-                        n.coord - c.coord,
-                        ca.coord - n.coord,
-                        )
-                if 11*np.pi/6 <= phi or phi <= np.pi/6:
-                    label = "c"
-                    label = 't'
-                else:
-                    label = 't'
-
-                parent = c.get_parent()
-                stereo[parent.get_id()[1]] = (parent, ca.get_parent(), label, phi)
+        C = atom.get_vector()
+        try:
+            O = next(bb_iter).get_vector()
+            N = next(bb_iter).get_vector()
+            CA = next(bb_iter).get_vector()
+            # between = {p.get_id()[1] for p in (c, o, n, ca)}
+        except StopIteration:
+            break
+        
+        angle = calc_dihedral(C, O, N, CA)
+        label = assign_stereo(np.mod(angle, 2*np.pi))
+        res_number = atom.get_parent().get_id()[1]
+        stereo[label].append(res_number) 
     return stereo
 
-
-def calc_angle(u1: np.array, u2: np.array, u3: np.array) -> float:
-    cl = np.cross(u1, u2)
-    cr = np.cross(u2, u3)
-    n_cl = np.linalg.norm(cl)
-    n_cr = np.linalg.norm(cr)
-
-    cos_phi = np.dot(cl, cr) / np.dot(n_cl, n_cr)
-    phi = np.arccos(cos_phi)
-    while phi < 0:
-        phi += 2*np.pi
-
-    return phi
+def assign_stereo(angle: float) -> str:
+    if 5*np.pi/6 <= angle <= 7*np.pi/6:
+        return "trans"
+    elif (0 <= angle <= np.pi/6) or (11*np.pi/6 <= angle <= 2*np.pi):
+        return "cis"
+    return "?"

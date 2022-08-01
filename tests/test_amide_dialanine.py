@@ -20,8 +20,9 @@ def test_amide_alanine_dipeptide(n: int):
         pdb = parser.get_structure(n, BASE / f"{n}.pdb")
 
     stereo = amide_bond.get_stereo(pdb)
+    result = "trans" if stereo['trans'] else 'cis'
     target = CONFIG[n]["amide"]
-    assert stereo == target
+    assert result == target
 
 if __name__ == '__main__':
     test_alanine()
