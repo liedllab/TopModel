@@ -3,32 +3,41 @@ from Bio.PDB.Structure import Structure
 from Bio.PDB.vectors import calc_dihedral
 import numpy as np
 
-def get_stereo(pdb: Structure) -> dict[int, tuple[str, str, float]]:
-    mask = {"N", "CA", "C", "O"}
-    bb_iter = (atom for atom in pdb.get_atoms() if atom.name in mask)
-    stereo = defaultdict(list)
-    for atom in bb_iter:
-        while atom.name != 'C':
-            atom = next(bb_iter)
 
-        C = atom.get_vector()
+class ProlineException(Exception):
+    """Prolines are more likely to be in cis-conformation, especially if they are preceded by
+    Glycine or an aromatic residue."""
+
+
+def get_stereo(pdb: Structure) -> dict[int, tuple[str, str, float]]:
+    stereo = defaultdict(list)
+    
+    header = pdb.get_residues()
+    tailer = pdb.get_residues()
+    next(tailer)
+    for head, tail in zip(header, tailer):
         try:
-            O = next(bb_iter).get_vector()
-            N = next(bb_iter).get_vector()
-            CA = next(bb_iter).get_vector()
-            # between = {p.get_id()[1] for p in (c, o, n, ca)}
-        except StopIteration:
-            break
-        
-        angle = calc_dihedral(C, O, N, CA)
-        label = assign_stereo(np.mod(angle, 2*np.pi))
-        res_number = atom.get_parent().get_id()[1]
+            label = assign_stereo(head, tail)
+        except ProlineException:
+            label = '?'
+        res_number = head.get_id()[1]
         stereo[label].append(res_number) 
     return stereo
 
-def assign_stereo(angle: float) -> str:
+
+def assign_stereo(head, tail):
+    angle = calc_dihedral(
+            head['CA'].get_vector(), head['C'].get_vector(),
+            tail['N'].get_vector(), tail['CA'].get_vector(),
+            )
+    angle = np.mod(angle, 2*np.pi)
     if 5*np.pi/6 <= angle <= 7*np.pi/6:
-        return "trans"
+        label = 'trans'
     elif (0 <= angle <= np.pi/6) or (11*np.pi/6 <= angle <= 2*np.pi):
-        return "cis"
-    return "?"
+        if tail.resname == 'PRO':
+            raise ProlineException
+        label = 'cis'
+    else:
+        label = '?'
+    return label
+

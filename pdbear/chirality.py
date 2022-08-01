@@ -1,4 +1,5 @@
 from __future__ import annotations
+from collections import defaultdict
 import numpy as np
 from Bio.PDB.Residue import Residue
 from Bio.PDB import vectors
@@ -31,3 +32,13 @@ def assign_chirality_amino_acid(residue: Residue) -> str:
     chirality = 'L' if rotations['C'] < rotations['CB'] else 'D'
     return chirality
 
+def get_chirality(pdb: Structure) -> defaultdict:
+    chirality = defaultdict(list)
+    for residue in pdb.get_residues():
+        res_number = residue.get_id()[1]
+        try:
+            label = assign_chirality_amino_acid(residue)
+        except GlycineException:
+            label = "L"
+        chirality[label].append(res_number)
+    return chirality
