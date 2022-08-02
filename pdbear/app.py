@@ -7,6 +7,7 @@ import sys
 import warnings
 import pickle
 import subprocess
+from pathlib import Path
 
 from Bio.SeqUtils import seq1
 from Bio.PDB.Structure import Structure
@@ -160,14 +161,17 @@ def main(file, amides, chiralities, pymol) -> None:
         app.output_to_terminal(data)
     
         if pymol:
+            click.echo("-"*app.width)
             clean = {k:[v.get_id()[1] for v in values] for k, values in data.items() \
                     if k in {'D', 'cis', 'cis_proline', 'strange'}}
-            with open('.temp', 'wb') as f:
+            
+            with open('.pdbear_temp', 'wb') as f:
                 pickle.dump(file, f, protocol=2)
                 pickle.dump(app.colors, f, protocol=2)
                 pickle.dump(clean, f, protocol=2)
 
-            subprocess.run(['pymol', '-qm', 'script_pymol.py'])
+            path = Path(__file__)
+            subprocess.run(['pymol', '-qm', path.parent / 'script_pymol.py'])
 
         click.confirm('Do you want to continue?', abort=True, default=True)
         file = click.prompt("Next Structure", type=click.Path(exists=True))

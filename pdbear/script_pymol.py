@@ -4,7 +4,7 @@ import sys
 import os
 
 def main_pymol():
-    with open('.temp', 'rb') as f:
+    with open('.pdbear_temp', 'rb') as f:
         path = pickle.load(f)
         colors = pickle.load(f)
         data = pickle.load(f)
@@ -21,15 +21,13 @@ def main_pymol():
                 sel_str = " or ".join(["resid " + str(n) +  "-" + str(n+1) for n in values])
             else:
                 sel_str = " or ".join(["resid " + str(n) for n in values])
-            print(sel_str)
-            print(k)
 
             cmd.color(colors[k], sel_str)
             cmd.show("sticks", sel_str)
             cmd.select(k, sel_str)
     
     cmd.color('atomic', 'not elem C')
-    os.remove('.temp')
+    os.remove('.pdbear_temp')
 
 
 if __name__ == 'pymol':
