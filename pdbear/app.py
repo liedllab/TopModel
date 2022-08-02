@@ -15,7 +15,7 @@ from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.PDBExceptions import PDBConstructionWarning
 import click
 
-from pdbear import amide_bond, chirality
+from pdbear.src import amide_bond, chirality
 
 class PDBError(Exception):
     """Raised when needed information is missing in Structure"""
