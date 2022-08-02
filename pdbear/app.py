@@ -1,3 +1,4 @@
+"""Entry point for CLI"""
 from __future__ import annotations
 
 from collections import defaultdict
@@ -11,14 +12,13 @@ from pathlib import Path
 
 from Bio.SeqUtils import seq1
 from Bio.PDB.Structure import Structure
+from Bio.PDB.Residue import Residue
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.PDBExceptions import PDBConstructionWarning
 import click
 
 from pdbear.src import amide_bond, chirality
-
-class PDBError(Exception):
-    """Raised when needed information is missing in Structure"""
+from pdbear.src.pdb_errors import PDBError
 
 class App:
     def __init__(self, amides, chiralities):
@@ -26,9 +26,9 @@ class App:
         self.amides = amides
         self.chiralities = chiralities
         self.colors = {
-                'D': 'orange', 
-                'cis': 'red', 
-                'cis_proline': 'red', 
+                'D': 'magenta',
+                'cis': 'red',
+                'cis_proline': 'red',
                 'strange': 'yellow',
                 }
 
@@ -53,11 +53,12 @@ determine the chiralities"
 
         return structure
 
-    def process_structure(self, structure) -> None:
+    def process_structure(self, structure: Structure) -> dict[str, list[Residue]]:
         header, tailer = structure.get_residues(), structure.get_residues()
-        next(tailer) 
-        
+        next(tailer)
+
         structure_data = defaultdict(set)
+        structure_data['len'] = 0
         for structure_len, (head, tail) in enumerate(zip(header, tailer), start=1):
             if self.amides:
                 try:
@@ -66,24 +67,23 @@ determine the chiralities"
                     stereo = 'cis_proline'
                 structure_data[stereo].add(head)
             if self.chiralities:
+                if structure_len == 1:
+                    try:
+                        chiral = chirality.assign_chirality_amino_acid(head)
+                    except chirality.GlycineException:
+                        chiral = 'L'
+                    structure_data[chiral].add(head)
+
                 try:
-                    chiral = chirality.assign_chirality_amino_acid(head)
+                    chiral = chirality.assign_chirality_amino_acid(tail)
                 except chirality.GlycineException:
                     chiral = 'L'
-                structure_data[chiral].add(head)
-
-        if self.chiralities:
-            try:
-                chiral = chirality.assign_chirality_amino_acid(tail)
-            except chirality.GlycineException:
-                chiral = 'L'
-            structure_data[chiral].add(tail)
-
-        structure_data['len'] = structure_len
+                structure_data[chiral].add(tail)
+            structure_data['len'] = structure_len
 
         return structure_data
 
-    def output_to_terminal(self, structure_data):
+    def output_to_terminal(self, structure_data: dict[str, list[Residue]]) -> None:
         click.echo("")
         if self.chiralities:
             self.display_information(
@@ -117,13 +117,12 @@ determine the chiralities"
             click.echo(click.style("No irregularities were found.", bold=True, fg='green'))
             click.echo("")
 
-        return None
-    
-    def display_information(
-            self, 
-            residue_list: list[Residue], msg: str, 
-            structure_len: int, color: str = 'white') -> None:
-        
+    def display_information(self,
+                            residue_list: list[Residue],
+                            msg: str,
+                            structure_len: int,
+                            color: str = 'white') -> None:
+
         if not residue_list:
             return None
 
@@ -136,7 +135,7 @@ determine the chiralities"
         for line in wrapped_text:
             click.echo(line)
         click.echo("")
-
+        return None
 
 
 @click.command()
@@ -149,7 +148,8 @@ determine the chiralities"
 @click.option("--amides", "-a", is_flag=True, default=True, show_default=True)
 @click.option("--chiralities", "-c", is_flag=True, default=True, show_default=True)
 @click.option("--pymol", "-p", is_flag=True, default=False, show_default=True)
-def main(file, amides, chiralities, pymol) -> None:
+def main(file: str, amides: bool, chiralities: bool, pymol: bool) -> None:
+    """CLI application"""
     app = App(amides, chiralities)
     while True:
         try:
@@ -159,24 +159,24 @@ def main(file, amides, chiralities, pymol) -> None:
             sys.exit(1)
         data = app.process_structure(struc)
         app.output_to_terminal(data)
-    
-        if pymol:
+
+        if pymol or click.confirm('Do you want to open the structure in PyMOL?', default=False):
             click.echo("-"*app.width)
             clean = {k:[v.get_id()[1] for v in values] for k, values in data.items() \
                     if k in {'D', 'cis', 'cis_proline', 'strange'}}
-            
+
             with open('.pdbear_temp', 'wb') as f:
                 pickle.dump(file, f, protocol=2)
                 pickle.dump(app.colors, f, protocol=2)
                 pickle.dump(clean, f, protocol=2)
 
             path = Path(__file__)
-            subprocess.run(['pymol', '-qm', path.parent / 'script_pymol.py'])
+            subprocess.run(['pymol', '-qm', path.parent / 'script_pymol.py'], check=False)
+            click.echo("-"*app.width)
 
         click.confirm('Do you want to continue?', abort=True, default=True)
         file = click.prompt("Next Structure", type=click.Path(exists=True))
 
 
 if __name__ == '__main__':
-    main()
-
+    main() # pylint: disable=no-value-for-parameter

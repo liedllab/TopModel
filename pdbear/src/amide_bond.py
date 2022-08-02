@@ -1,17 +1,21 @@
+"""Calculate and assign `cis` and `trans` label to amide bonds. Bonds that are neither cis nor trans
+are assigned the `strange` label."""
+
+from __future__ import annotations
+
 from collections import defaultdict
 from Bio.PDB.Structure import Structure
+from Bio.PDB.Residue import Residue
 from Bio.PDB.vectors import calc_dihedral
 import numpy as np
+from .pdb_errors import ProlineException
 
 
-class ProlineException(Exception):
-    """Prolines are more likely to be in cis-conformation, especially if they are preceded by
-    Glycine or an aromatic residue."""
+def get_stereo(pdb: Structure) -> dict[str, list[Residue]]:
+    """Iterates over structure and yields result in a dictionary that maps the label to a list of
+Residues."""
 
-
-def get_stereo(pdb: Structure) -> dict[int, tuple[str, str, float]]:
     stereo = defaultdict(list)
-    
     header = pdb.get_residues()
     tailer = pdb.get_residues()
     next(tailer)
@@ -21,11 +25,14 @@ def get_stereo(pdb: Structure) -> dict[int, tuple[str, str, float]]:
         except ProlineException:
             label = 'strange'
         res_number = head.get_id()[1]
-        stereo[label].append(res_number) 
+        stereo[label].append(res_number)
     return stereo
 
 
-def assign_stereo(head, tail):
+def assign_stereo(head: Residue, tail: Residue) -> str:
+    """Calculates dihedral angle of amide bond between Residue `head` and `tail`. The angle then is
+mapped to the labels `cis`, `trans` or `strange`."""
+
     angle = calc_dihedral(
             head['CA'].get_vector(), head['C'].get_vector(),
             tail['N'].get_vector(), tail['CA'].get_vector(),
@@ -40,4 +47,3 @@ def assign_stereo(head, tail):
     else:
         label = 'strange'
     return label
-
