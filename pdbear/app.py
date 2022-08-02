@@ -171,7 +171,10 @@ def main(file: str, amides: bool, chiralities: bool, pymol: bool) -> None:
                 pickle.dump(clean, f, protocol=2)
 
             path = Path(__file__)
-            subprocess.run(['pymol', '-qm', path.parent / 'script_pymol.py'], check=False)
+            try:
+                subprocess.run(['pymol', '-qm', path.parent / 'script_pymol.py'], check=False)
+            except FileNotFoundError as e:
+                click.echo(click.style(e + '\nIs `pymol` in PATH?', fg='white', bg='red', bold=True))
             click.echo("-"*app.width)
 
         click.confirm('Do you want to continue?', abort=True, default=True)
