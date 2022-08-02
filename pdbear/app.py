@@ -37,7 +37,7 @@ class App:
 determine the chiralities"
                     )
         if self.amides:
-            diff = all_atom_types.difference({'CB', 'C', 'CA', 'N'})
+            diff = {'CB', 'C', 'CA', 'N'}.difference(all_atom_types)
             if diff:
                 diff_str = ", ".join(diff)
                 raise PDBError(f"{diff_str} needed to determine the amide bond orientation")
@@ -138,13 +138,16 @@ determine the chiralities"
 @click.option("--pymol", "-p", is_flag=True, default=False, show_default=True)
 def main(file, amides, chiralities, pymol) -> None:
     app = App(amides, chiralities)
-    try:
-        struc = app.load_structure(file)
-    except PDBError as e:
-        click.echo(click.style(e, fg='white', bg='red', bold=True))
-        sys.exit(1)
-    data = app.process_structure(struc)
-    app.output_to_terminal(data)
+    while True:
+        try:
+            struc = app.load_structure(file)
+        except PDBError as e:
+            click.echo(click.style(e, fg='white', bg='red', bold=True))
+            sys.exit(1)
+        data = app.process_structure(struc)
+        app.output_to_terminal(data)
+        click.confirm('Do you want to continue?', abort=True, default=True)
+        file = click.prompt("Next Structure", type=click.Path(exists=True))
 
 
 if __name__ == '__main__':
