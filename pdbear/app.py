@@ -5,6 +5,8 @@ import textwrap
 import os
 import sys
 import warnings
+import pickle
+import subprocess
 
 from Bio.SeqUtils import seq1
 from Bio.PDB.Structure import Structure
@@ -22,6 +24,12 @@ class App:
         self.width = os.get_terminal_size().columns
         self.amides = amides
         self.chiralities = chiralities
+        self.colors = {
+                'D': 'orange', 
+                'cis': 'red', 
+                'cis_proline': 'red', 
+                'strange': 'yellow',
+                }
 
     def load_structure(self, path: str) -> Structure:
         parser = PDBParser()
@@ -81,6 +89,7 @@ determine the chiralities"
                     structure_data['D'],
                     "D amino acids",
                     structure_data['len'],
+                    self.colors['D'],
                     )
         # amide
         if self.amides:
@@ -88,19 +97,22 @@ determine the chiralities"
                     structure_data['cis'],
                     "Cis amide bonds",
                     structure_data['len'],
+                    self.colors['cis'],
                     )
             self.display_information(
                     structure_data['cis_proline'],
                     "Bonds to cis prolines",
                     structure_data['len'],
+                    self.colors['cis_proline'],
                     )
             self.display_information(
-                    structure_data['?'],
+                    structure_data['strange'],
                     "Strange torsion angles for the amide bond",
                     structure_data['len'],
+                    self.colors['strange'],
                     )
 
-        if not structure_data['D'] and not structure_data['cis'] and not structure_data['?']:
+        if not structure_data['D'] and not structure_data['cis'] and not structure_data['strange']:
             click.echo(click.style("No irregularities were found.", bold=True, fg='green'))
             click.echo("")
 
@@ -109,12 +121,12 @@ determine the chiralities"
     def display_information(
             self, 
             residue_list: list[Residue], msg: str, 
-            structure_len: int) -> None:
+            structure_len: int, color: str = 'white') -> None:
         
         if not residue_list:
             return None
 
-        click.echo(click.style(msg, bold=True, fg='red') + " have been detected at:")
+        click.echo(click.style(msg, bold=True, fg=color) + " have been detected at:")
         raw = ", ".join(
                 [f"{seq1(residue.resname)}{residue.get_id()[1]:0{len(str(structure_len))}}" \
                         for residue in residue_list]
@@ -146,11 +158,21 @@ def main(file, amides, chiralities, pymol) -> None:
             sys.exit(1)
         data = app.process_structure(struc)
         app.output_to_terminal(data)
+    
+        if pymol:
+            clean = {k:[v.get_id()[1] for v in values] for k, values in data.items() \
+                    if k in {'D', 'cis', 'cis_proline', 'strange'}}
+            with open('.temp', 'wb') as f:
+                pickle.dump(file, f, protocol=2)
+                pickle.dump(app.colors, f, protocol=2)
+                pickle.dump(clean, f, protocol=2)
+
+            subprocess.run(['pymol', '-qm', 'script_pymol.py'])
+
         click.confirm('Do you want to continue?', abort=True, default=True)
         file = click.prompt("Next Structure", type=click.Path(exists=True))
 
 
 if __name__ == '__main__':
-    sys.tracebacklimit=0
     main()
 

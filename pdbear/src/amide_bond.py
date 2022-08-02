@@ -19,7 +19,7 @@ def get_stereo(pdb: Structure) -> dict[int, tuple[str, str, float]]:
         try:
             label = assign_stereo(head, tail)
         except ProlineException:
-            label = '?'
+            label = 'strange'
         res_number = head.get_id()[1]
         stereo[label].append(res_number) 
     return stereo
@@ -38,6 +38,6 @@ def assign_stereo(head, tail):
             raise ProlineException
         label = 'cis'
     else:
-        label = '?'
+        label = 'strange'
     return label
 
