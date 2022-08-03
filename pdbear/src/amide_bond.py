@@ -6,7 +6,7 @@ from __future__ import annotations
 from collections import defaultdict
 from Bio.PDB import Structure, Residue, vectors
 import numpy as np
-from .pdb_errors import ProlineException, PDBError
+from .utils import ProlineException, PDBError, StereoIsomer
 
 
 def get_stereo(pdb: Structure.Structure) -> dict[str, list[Residue.Residue]]:
@@ -21,7 +21,7 @@ Residues."""
         try:
             label = assign_stereo(head, tail)
         except ProlineException:
-            label = 'strange'
+            label = StereoIsomer.CIS_PROLINE
         res_number = head.get_id()[1]
         stereo[label].append(res_number)
     return stereo
@@ -44,11 +44,11 @@ mapped to the labels `cis`, `trans` or `strange`."""
 
     angle = np.mod(angle, 2*np.pi)
     if 5*np.pi/6 <= angle <= 7*np.pi/6:
-        label = 'trans'
+        label = StereoIsomer.TRANS
     elif (0 <= angle <= np.pi/6) or (11*np.pi/6 <= angle <= 2*np.pi):
         if tail.resname == 'PRO':
             raise ProlineException
-        label = 'cis'
+        label = StereoIsomer.CIS
     else:
-        label = 'strange'
+        label = StereoIsomer.INBETWEEN
     return label

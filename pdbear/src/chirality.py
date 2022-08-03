@@ -5,16 +5,22 @@ from __future__ import annotations
 from collections import defaultdict
 from Bio.PDB import vectors, Residue, Structure
 import numpy as np
-from .pdb_errors import GlycineException, PDBError
+from .utils import GlycineException, PDBError, ChiralCenter
 
 
-def get_theta(vec: vectors.Vector, rotation_matrix: np.ndarray) -> float:
-    """Rotate vector so that HA lies at x=0, y=0 and then calculate angle of newly obtained
-vector."""
+def get_chirality(pdb: Structure.Structure) -> dict[str, list[Residue.Residue]]:
+    """Iterate over structure to yield a defaultdict with `L` and `D` as keys and lists of Residues
+as corresponding values."""
 
-    x, y, _ = vec.left_multiply(rotation_matrix)
-    theta = np.arctan2(y, x)
-    return theta
+    chirality = defaultdict(list)
+    for residue in pdb.get_residues():
+        res_number = residue.get_id()[1]
+        try:
+            label = assign_chirality_amino_acid(residue)
+        except GlycineException:
+            label = ChiralCenter.L
+        chirality[label].append(res_number)
+    return chirality
 
 
 def assign_chirality_amino_acid(residue: Residue.Residue) -> str:
@@ -36,19 +42,14 @@ determine the chiralities") from error
     rotations = {name: np.mod(get_theta(vec, transformer) - theta_zero, 2*np.pi) \
                     for name, vec in atoms.items()}
 
-    chirality = 'L' if rotations['C'] < rotations['CB'] else 'D'
+    chirality = ChiralCenter.L if rotations['C'] < rotations['CB'] else ChiralCenter.D
     return chirality
 
-def get_chirality(pdb: Structure.Structure) -> dict[str, list[Residue.Residue]]:
-    """Iterate over structure to yield a defaultdict with `L` and `D` as keys and lists of Residues
-as corresponding values."""
 
-    chirality = defaultdict(list)
-    for residue in pdb.get_residues():
-        res_number = residue.get_id()[1]
-        try:
-            label = assign_chirality_amino_acid(residue)
-        except GlycineException:
-            label = "L"
-        chirality[label].append(res_number)
-    return chirality
+def get_theta(vec: vectors.Vector, rotation_matrix: np.ndarray) -> float:
+    """Rotate vector so that HA lies at x=0, y=0 and then calculate angle of newly obtained
+vector."""
+
+    x, y, _ = vec.left_multiply(rotation_matrix)
+    theta = np.arctan2(y, x)
+    return theta

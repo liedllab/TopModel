@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from enum import Enum
 from pathlib import Path
 import os
 import pickle
@@ -15,7 +16,8 @@ from Bio.PDB import PDBParser, Residue, Structure, PDBExceptions
 import click
 
 from pdbear.src import amide_bond, chirality
-from pdbear.src.pdb_errors import PDBError, GlycineException, ProlineException
+from pdbear.src.utils import PDBError, GlycineException, ProlineException
+from pdbear.src.utils import ChiralCenter, StereoIsomer
 
 class App:
     """App container"""
@@ -24,10 +26,10 @@ class App:
         self.amides = amides
         self.chiralities = chiralities
         self.colors = {
-                'D': 'magenta',
-                'cis': 'red',
-                'cis_proline': 'red',
-                'strange': 'yellow',
+                ChiralCenter.D: 'magenta',
+                StereoIsomer.CIS: 'red',
+                StereoIsomer.CIS_PROLINE: 'red',
+                StereoIsomer.INBETWEEN: 'yellow',
                 }
 
     def load_structure(self, path: str) -> Structure.Structure:
@@ -42,70 +44,72 @@ class App:
     def process_structure(
             self,
             structure: Structure.Structure
-            ) -> dict[str, list[Residue.Residue]]:
+            ) -> tuple[dict[str, list[Residue.Residue]], int]:
         """Calculate chosen measures from structure"""
 
         header, tailer = structure.get_residues(), structure.get_residues()
         next(tailer)
 
         structure_data = defaultdict(set)
-        structure_data['len'] = 0
+        structure_len = 0
         for structure_len, (head, tail) in enumerate(zip(header, tailer), start=1):
             if self.amides:
                 try:
                     stereo = amide_bond.assign_stereo(head, tail)
                 except ProlineException:
-                    stereo = 'cis_proline'
+                    stereo = StereoIsomer.CIS_PROLINE
                 structure_data[stereo].add(head)
             if self.chiralities:
                 if structure_len == 1:
                     try:
                         chiral = chirality.assign_chirality_amino_acid(head)
                     except GlycineException:
-                        chiral = 'L'
+                        chiral = ChiralCenter.L
                     structure_data[chiral].add(head)
 
                 try:
                     chiral = chirality.assign_chirality_amino_acid(tail)
                 except GlycineException:
-                    chiral = 'L'
+                    chiral = ChiralCenter.L
                 structure_data[chiral].add(tail)
-            structure_data['len'] = structure_len
 
-        return structure_data
+        return structure_data, structure_len
 
-    def output_to_terminal(self, structure_data: dict[str, list[Residue.Residue]]) -> None:
+    def output_to_terminal(self,
+                           structure_data: dict[Enum, list[Residue.Residue]],
+                           length: int) -> None:
         """Organise the output to terminal"""
         click.echo("")
+        counter = 0
         if self.chiralities:
-            self.display_information(
-                    structure_data['D'],
+            counter += self.display_information(
+                    structure_data[ChiralCenter.D],
                     "D amino acids",
-                    structure_data['len'],
-                    self.colors['D'],
+                    length,
+                    self.colors[ChiralCenter.D],
                     )
         # amide
         if self.amides:
-            self.display_information(
-                    structure_data['cis'],
+            counter += self.display_information(
+                    structure_data[StereoIsomer.CIS],
                     "Cis amide bonds",
-                    structure_data['len'],
-                    self.colors['cis'],
+                    length,
+                    self.colors[StereoIsomer.CIS],
                     )
-            self.display_information(
-                    structure_data['cis_proline'],
+            counter += self.display_information(
+                    structure_data[StereoIsomer.CIS_PROLINE],
                     "Bonds to cis prolines",
-                    structure_data['len'],
-                    self.colors['cis_proline'],
+                    length,
+                    self.colors[StereoIsomer.CIS_PROLINE],
                     )
-            self.display_information(
-                    structure_data['strange'],
+            counter += self.display_information(
+                    structure_data[StereoIsomer.INBETWEEN],
                     "Strange torsion angles for the amide bond",
-                    structure_data['len'],
-                    self.colors['strange'],
+                    length,
+                    self.colors[StereoIsomer.INBETWEEN],
                     )
 
-        if not structure_data['D'] and not structure_data['cis'] and not structure_data['strange']:
+        if counter == 0:
             click.echo(click.style("No irregularities were found.", bold=True, fg='green'))
             click.echo("")
 
@@ -113,11 +117,11 @@ class App:
                             residue_list: list[Residue.Residue],
                             msg: str,
                             structure_len: int,
-                            color: str = 'white') -> None:
-        """Print single information"""
+                            color: str = 'white') -> int:
+        """Print single information and returns number of residues"""
 
         if not residue_list:
-            return None
+            return 0
 
         click.echo(click.style(msg, bold=True, fg=color) + " have been detected at:")
         raw = ", ".join(
@@ -128,11 +132,11 @@ class App:
         for line in wrapped_text:
             click.echo(line)
         click.echo("")
-        return None
+        return len(residue_list)
 
 def run_pymol(script: str | Path,
               structure: str | Path,
-              data: dict[str, list[int]],
+              data: dict[Enum, list[int]],
               app: App,
               temp: str | Path) -> None:
     """Run PyMOL script and handle terminal output"""
@@ -140,8 +144,13 @@ def run_pymol(script: str | Path,
     click.echo("-" * app.width)
     with open(temp, 'wb') as tempfile:
         pickle.dump(structure, tempfile, protocol=2)
-        pickle.dump(app.colors, tempfile, protocol=2)
-        pickle.dump(data, tempfile, protocol=2)
+        pickle.dump(
+                {k.name : values for k, values in app.colors.items()},
+                tempfile, protocol=2)
+        pickle.dump(
+                {k.name : [v.get_id()[1] for v in values] \
+                        for k, values in data.items()},
+                tempfile, protocol=2)
 
     try:
         subprocess.run(['pymol', '-qm', script], check=False)
@@ -153,11 +162,10 @@ def run_pymol(script: str | Path,
 
 
 @click.command()
-@click.option(
-        "--file", "-f",
+@click.argument(
+        "file",
         required=True,
         type=click.Path(exists=True),
-        help="Path to the PDB file",
         )
 @click.option("--amides", "-a", is_flag=True, default=True, show_default=True)
 @click.option("--chiralities", "-c", is_flag=True, default=True, show_default=True)
@@ -168,18 +176,18 @@ def main(file: str, amides: bool, chiralities: bool, pymol: bool) -> None:
     while True:
         struc = app.load_structure(file)
         try:
-            data = app.process_structure(struc)
+            data, n_res = app.process_structure(struc)
+            print(data)
         except PDBError as error:
             click.echo(click.style(error, fg='white', bg='red', bold=True))
             sys.exit(1)
-        app.output_to_terminal(data)
+        app.output_to_terminal(data, n_res)
 
         if pymol or click.confirm('Do you want to open the structure in PyMOL?', default=False):
             run_pymol(
                     script=Path(__file__).parent / 'script_pymol.py',
                     structure=file,
-                    data={k: [v.get_id()[1] for v in values] for k, values in data.items()
-                            if k in {'D', 'cis', 'cis_proline', 'strange'}},
+                    data=data,
                     app=app,
                     temp='.pdbear.temp',
                     )
