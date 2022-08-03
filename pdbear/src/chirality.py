@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from Bio.PDB.Residue import Residue
-from Bio.PDB.Structure import Structure
-from Bio.PDB import vectors
+from Bio.PDB import vectors, Residue, Structure
 import numpy as np
-from .pdb_errors import GlycineException
+from .pdb_errors import GlycineException, PDBError
 
 
 def get_theta(vec: vectors.Vector, rotation_matrix: np.ndarray) -> float:
@@ -19,7 +17,7 @@ vector."""
     return theta
 
 
-def assign_chirality_amino_acid(residue: Residue) -> str:
+def assign_chirality_amino_acid(residue: Residue.Residue) -> str:
     """Assign L/D label to residue."""
 
     CA = residue['CA'].get_vector().copy()
@@ -27,10 +25,12 @@ def assign_chirality_amino_acid(residue: Residue) -> str:
 
     try:
         transformer = vectors.rotmat(atoms['HA'], vectors.Vector(0,0,-1))
-    except KeyError as e:
+    except KeyError as error:
         if residue.resname == 'GLY':
-            raise GlycineException from e
-        raise e
+            raise GlycineException from error
+        raise PDBError(
+        "No H-alphas are in the PDB structure which is needed to \
+determine the chiralities") from error
 
     theta_zero = get_theta(atoms['N'], transformer)
     rotations = {name: np.mod(get_theta(vec, transformer) - theta_zero, 2*np.pi) \
@@ -39,7 +39,7 @@ def assign_chirality_amino_acid(residue: Residue) -> str:
     chirality = 'L' if rotations['C'] < rotations['CB'] else 'D'
     return chirality
 
-def get_chirality(pdb: Structure) -> dict[str, list[Residue]]:
+def get_chirality(pdb: Structure.Structure) -> dict[str, list[Residue.Residue]]:
     """Iterate over structure to yield a defaultdict with `L` and `D` as keys and lists of Residues
 as corresponding values."""
 

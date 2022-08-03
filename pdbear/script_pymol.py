@@ -1,13 +1,12 @@
 """Pymol script to visualize the structure checked by app.py"""
-import os
 import pickle
 from pymol import cmd # pylint: disable=import-error
 
 def main_pymol():
-    with open('.pdbear_temp', 'rb') as f:
-        path = pickle.load(f)
-        colors = pickle.load(f)
-        data = pickle.load(f)
+    with open('.pdbear.temp', 'rb') as temp:
+        path = pickle.load(temp)
+        colors = pickle.load(temp)
+        data = pickle.load(temp)
 
     cmd.load(path)
     cmd.color('white')
@@ -28,7 +27,6 @@ def main_pymol():
 
     cmd.color('atomic', 'not elem C')
     cmd.deselect()
-    os.remove('.pdbear_temp')
 
 
 if __name__ == 'pymol':
