@@ -1,7 +1,9 @@
+#! /usr/bin/env python3
 """Entry point for CLI"""
 from __future__ import annotations
 
 from collections import defaultdict
+import itertools
 from enum import Enum
 from pathlib import Path
 import os
@@ -10,129 +12,110 @@ import subprocess
 import sys
 import textwrap
 import warnings
+from typing import NamedTuple, Callable
 
 from Bio.SeqUtils import seq1
 from Bio.PDB import PDBParser, Residue, Structure, PDBExceptions
 import click
 
-from pdbear.src import amide_bond, chirality
+from pdbear import src 
+
 from pdbear.src.utils import PDBError, GlycineException, ProlineException
-from pdbear.src.utils import ChiralCenter, StereoIsomer
+from pdbear.src.utils import ChiralCenters, StereoIsomers, Clashes, Color
+
+
+
+def load_structure(path: str) -> Structure.Structure:
+    """Load PDB structure from path"""
+    parser = PDBParser()
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=PDBExceptions.PDBConstructionWarning)
+        structure = parser.get_structure("", path)
+
+    return structure
+
+
+
+# handle colors, display and formating
 
 class App:
     """App container"""
-    def __init__(self, amides, chiralities):
+    def __init__(self, amides: bool, chiralities: bool, clashes: bool):
+        self.funcs: list[Callable] = []
+        self.display: dict[Enum, Color] = {}
+        if amides:
+            self.funcs.append(src.amide_bond.get_stereo)
+            self.display.update({
+                StereoIsomers.CIS: Color.RED,
+                StereoIsomers.CIS_PROLINE: Color.RED,
+                StereoIsomers.INBETWEEN: Color.YELLOW,
+                })
+        if chiralities:
+            self.funcs.append(src.chirality.get_chirality)
+            self.display.update(
+                        {ChiralCenters.D:Color.MAGENTA},
+                        )
+        if clashes:
+            self.funcs.append(src.clashes.get_clashes)
+            self.display.update(
+                        {Clashes.VDW: Color.BLUE},
+                        )
         self.width = os.get_terminal_size().columns
-        self.amides = amides
-        self.chiralities = chiralities
-        self.colors = {
-                ChiralCenter.D: 'magenta',
-                StereoIsomer.CIS: 'red',
-                StereoIsomer.CIS_PROLINE: 'red',
-                StereoIsomer.INBETWEEN: 'yellow',
-                }
+        self.n_res = None
+        self.data = None
 
-    def load_structure(self, path: str) -> Structure.Structure:
-        """Load PDB structure from path"""
-        parser = PDBParser()
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=PDBExceptions.PDBConstructionWarning)
-            structure = parser.get_structure("", path)
-
-        return structure
-
-    def process_structure(
-            self,
-            structure: Structure.Structure
-            ) -> tuple[dict[str, list[Residue.Residue]], int]:
+    def process_structure(self, structure: Structure.Structure) -> None:
         """Calculate chosen measures from structure"""
+        structure_data = {}
+        for func in self.funcs:
+            structure_data.update(func(structure))
 
-        header, tailer = structure.get_residues(), structure.get_residues()
-        next(tailer)
+        self.n_res = len(str(len(list(structure.get_residues()))))
+        self.data = structure_data
 
-        structure_data = defaultdict(set)
-        structure_len = 0
-        for structure_len, (head, tail) in enumerate(zip(header, tailer), start=1):
-            if self.amides:
-                try:
-                    stereo = amide_bond.assign_stereo(head, tail)
-                except ProlineException:
-                    stereo = StereoIsomer.CIS_PROLINE
-                structure_data[stereo].add(head)
-            if self.chiralities:
-                if structure_len == 1:
-                    try:
-                        chiral = chirality.assign_chirality_amino_acid(head)
-                    except GlycineException:
-                        chiral = ChiralCenter.L
-                    structure_data[chiral].add(head)
-
-                try:
-                    chiral = chirality.assign_chirality_amino_acid(tail)
-                except GlycineException:
-                    chiral = ChiralCenter.L
-                structure_data[chiral].add(tail)
-
-        return structure_data, structure_len
-
-    def output_to_terminal(self,
-                           structure_data: dict[Enum, list[Residue.Residue]],
-                           length: int) -> None:
+    def output_to_terminal(self, structure_data: dict[Enum, list[Residue.Residue]],) -> None:
         """Organise the output to terminal"""
+        
+        res_frmt = lambda residue: f'{seq1(residue.get_resname())}{residue.get_id()[1]:0{self.n_res}}'
+        output = defaultdict(list)
+        for key, val in self.data.items():
+            if key in self.display:
+                for item in val:
+                    match item:
+                        case (_, _):
+                            output[key].append('-'.join((res_frmt(res) for res in item)))
+                        case Residue.Residue():
+                            output[key].append(res_frmt(item))
+                        case _:
+                            msg = f"For {item} in {key}"
+                            raise ValueError(msg)
+        
         click.echo("")
-        counter = 0
-        if self.chiralities:
-            counter += self.display_information(
-                    structure_data[ChiralCenter.D],
-                    "D amino acids",
-                    length,
-                    self.colors[ChiralCenter.D],
-                    )
-        # amide
-        if self.amides:
-            counter += self.display_information(
-                    structure_data[StereoIsomer.CIS],
-                    "Cis amide bonds",
-                    length,
-                    self.colors[StereoIsomer.CIS],
-                    )
-            counter += self.display_information(
-                    structure_data[StereoIsomer.CIS_PROLINE],
-                    "Bonds to cis prolines",
-                    length,
-                    self.colors[StereoIsomer.CIS_PROLINE],
-                    )
-            counter += self.display_information(
-                    structure_data[StereoIsomer.INBETWEEN],
-                    "Strange torsion angles for the amide bond",
-                    length,
-                    self.colors[StereoIsomer.INBETWEEN],
-                    )
-
-        if counter == 0:
+        if not output:
             click.echo(click.style("No irregularities were found.", bold=True, fg='green'))
             click.echo("")
 
-    def display_information(self,
-                            residue_list: list[Residue.Residue],
-                            msg: str,
-                            structure_len: int,
-                            color: str = 'white') -> int:
+        for key, val in output.items():
+            self.display_information(key, val)
+
+    def display_information(self, key: Enum, names: list[str]) -> None:
         """Print single information and returns number of residues"""
-
-        if not residue_list:
-            return 0
-
-        click.echo(click.style(msg, bold=True, fg=color) + " have been detected at:")
-        raw = ", ".join(
-                [f"{seq1(residue.resname)}{residue.get_id()[1]:0{len(str(structure_len))}}" \
-                        for residue in residue_list]
-                )
+        
+        click.echo(
+                click.style(f"{key.name} {key.__class__.__name__}", 
+                            bold=True, 
+                            fg=self.display[key].value)
+                + " have been detected at:")
+        raw = ", ".join(names)
         wrapped_text = textwrap.wrap(raw, width=self.width)
         for line in wrapped_text:
             click.echo(line)
         click.echo("")
-        return len(residue_list)
+
+    def __repr__(self):
+        return (f"{self.__class__.name}(width={self.width}px, amides={self.amides},"
+                "chiralities={self.chiralities}, clashes={self.clashes})")
+
 
 def run_pymol(script: str | Path,
               structure: str | Path,
@@ -169,19 +152,20 @@ def run_pymol(script: str | Path,
         )
 @click.option("--amides", "-a", is_flag=True, default=True, show_default=True)
 @click.option("--chiralities", "-c", is_flag=True, default=True, show_default=True)
+@click.option("--clashes", is_flag=True, default=True, show_default=True)
 @click.option("--pymol", "-p", is_flag=True, default=False, show_default=True)
-def main(file: str, amides: bool, chiralities: bool, pymol: bool) -> None:
+def main(file: str, amides: bool, chiralities: bool, clashes: bool, pymol: bool) -> None:
     """Check PDB Structures for errors"""
-    app = App(amides, chiralities)
+    M:jkaasdf
+    app = App(amides, chiralities, clashes)
     while True:
-        struc = app.load_structure(file)
+        struc = load_structure(file)
         try:
-            data, n_res = app.process_structure(struc)
-            print(data)
+            data = app.process_structure(struc)
         except PDBError as error:
             click.echo(click.style(error, fg='white', bg='red', bold=True))
             sys.exit(1)
-        app.output_to_terminal(data, n_res)
+        app.output_to_terminal(data)
 
         if pymol or click.confirm('Do you want to open the structure in PyMOL?', default=False):
             run_pymol(

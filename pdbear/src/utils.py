@@ -3,18 +3,29 @@
 from enum import Enum, auto
 
 
-class ChiralCenter(Enum):
+class ChiralCenters(Enum):
     """Enumeration of L/D Chirality"""
     L = auto()
     D = auto()
 
 
-class StereoIsomer(Enum):
+class StereoIsomers(Enum):
     """Enumeration to handle trans, cis stereo isomerism"""
     TRANS = auto()
     CIS = auto()
     INBETWEEN = auto()
     CIS_PROLINE = auto()
+
+
+class Clashes(Enum):
+    VDW = auto()
+
+
+class Color(Enum):
+    RED = 'red'
+    YELLOW = 'yellow'
+    MAGENTA = 'magenta'
+    BLUE = 'blue'
 
 
 class ProlineException(Exception):

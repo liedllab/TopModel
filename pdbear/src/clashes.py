@@ -7,6 +7,8 @@ from mendeleev import fetch
 
 from Bio.PDB import Structure, Residue, Entity
 
+from .utils import Clashes
+
 
 _df = fetch.fetch_table('elements')[['symbol', 'vdw_radius']]
 _df = _df.set_index('symbol')
@@ -14,7 +16,7 @@ VDW_RADII = _df / 100 # conversion from pm to angstrom
 del _df # so it cant be imported anymore?
 
 
-def get_clashes(pdb: Structure.Structure) -> set[frozenset[Residue.Residue]]:
+def get_clashes(pdb: Structure.Structure) -> dict[str, set[frozenset[Residue.Residue]]]:
     """Iterates over structure and yields a set of clashes."""
     all_clashes = set()
     _info = ((atom.coord, atom.parent) for atom in pdb.get_atoms())
@@ -25,7 +27,8 @@ def get_clashes(pdb: Structure.Structure) -> set[frozenset[Residue.Residue]]:
         clashes = compute_clash(residue, all_points, labels)
         for clash in clashes:
             all_clashes.add(frozenset([residue, clash]))
-    return all_clashes
+
+    return {Clashes.VDW: [tuple(x) for x in all_clashes]}
 
 
 def compute_clash(residue: Residue.Residue,
