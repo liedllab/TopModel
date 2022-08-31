@@ -131,3 +131,4 @@ dmypy.json
 # own
 *.swp
 .ipynb_checkpoints
+*.ipynb

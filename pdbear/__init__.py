@@ -2,3 +2,4 @@
 from .src import amide_bond
 from .src import chirality
 from .src import clashes
+from .src import pymol_gen

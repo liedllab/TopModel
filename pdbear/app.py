@@ -73,7 +73,7 @@ class App:
         self.n_res = len(str(len(list(structure.get_residues()))))
         self.data = structure_data
 
-    def output_to_terminal(self, structure_data: dict[Enum, list[Residue.Residue]],) -> None:
+    def output_to_terminal(self) -> dict[Enum, list]:
         """Organise the output to terminal"""
         
         res_frmt = lambda residue: f'{seq1(residue.get_resname())}{residue.get_id()[1]:0{self.n_res}}'
@@ -111,6 +111,42 @@ class App:
         for line in wrapped_text:
             click.echo(line)
         click.echo("")
+
+    def to_pml(self, structure_path: str):
+        res_frmt = lambda res: f'resid {res.get_id()[1]}'
+        
+        commands = [
+                f'load {structure_path}', 
+                'set cartoon_transparency, 0.3',
+                'hide lines',
+                'show cartoon',
+                'color white',
+                ]
+        for key, val in self.data.items():
+            residues = []
+            for item in val:
+                match item:
+                    case (a, b):
+                        residues.append(f'{res_frmt(a)} or {res_frmt(b)}')
+                    case c:
+                        residues.append(res_frmt(c))
+            sel_string = ' or '.join(residues)
+            try:
+                color = self.display[key].value
+            except KeyError:
+                pass
+            else:
+                commands.append(f'color {color}, {sel_string}')
+                commands.append(f'show sticks, {sel_string}')
+            commands.append(f'select {key.name}, {sel_string}')
+
+        commands.append('color atomic, not elem C')
+        commands.append('deselect')
+
+        pml = '\n'.join(commands)
+        with open(Path(structure_path).stem + '.pml', 'w') as f:
+            f.write(pml)
+
 
     def __repr__(self):
         return (f"{self.__class__.name}(width={self.width}px, amides={self.amides},"
@@ -156,28 +192,19 @@ def run_pymol(script: str | Path,
 @click.option("--pymol", "-p", is_flag=True, default=False, show_default=True)
 def main(file: str, amides: bool, chiralities: bool, clashes: bool, pymol: bool) -> None:
     """Check PDB Structures for errors"""
-    M:jkaasdf
     app = App(amides, chiralities, clashes)
-    while True:
-        struc = load_structure(file)
-        try:
-            data = app.process_structure(struc)
-        except PDBError as error:
-            click.echo(click.style(error, fg='white', bg='red', bold=True))
-            sys.exit(1)
-        app.output_to_terminal(data)
-
-        if pymol or click.confirm('Do you want to open the structure in PyMOL?', default=False):
-            run_pymol(
-                    script=Path(__file__).parent / 'script_pymol.py',
-                    structure=file,
-                    data=data,
-                    app=app,
-                    temp='.pdbear.temp',
-                    )
-
-        click.confirm('Do you want to continue?', abort=True, default=True)
-        file = click.prompt("Next Structure", type=click.Path(exists=True))
+    filepath = Path(file)
+    struc = load_structure(filepath)
+    try:
+        app.process_structure(struc)
+    except PDBError as error:
+        click.echo(click.style(error, fg='white', bg='red', bold=True))
+        sys.exit(1)
+    
+    app.output_to_terminal()
+    app.to_pml(filepath)
+    if pymol:
+        subprocess.run(['pymol', '-qm', filepath.stem + '.pml'], check=False)
 
 
 if __name__ == '__main__':
