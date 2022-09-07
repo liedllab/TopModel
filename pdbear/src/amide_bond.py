@@ -6,8 +6,8 @@ from __future__ import annotations
 from collections import defaultdict
 from Bio.PDB import Structure, Residue, vectors
 import numpy as np
-from .utils import ProlineException, PDBError, AmideBonds
-from .utils import StructuralIrregularity, CoupleIrregularity
+from .errors import ProlineException, PDBError
+from .utils import AmideBonds, StructuralIrregularity, CoupleIrregularity
 
 
 def get_amid_stereo(pdb: Structure.Structure) -> dict[str, list[StructuralIrregularity]]:

@@ -16,7 +16,15 @@ from Bio.PDB import PDBParser, Structure, PDBExceptions
 import click
 
 from pdbear import src
-from pdbear.src.utils import PDBError, ChiralCenters, AmideBonds, Clashes, Color
+from pdbear.src.utils import ChiralCenters, AmideBonds, Clashes
+from pdbear.src.errors import PDBError
+
+
+class Color(Enum):
+    RED = 'red'
+    YELLOW = 'yellow'
+    MAGENTA = 'magenta'
+    CYAN = 'cyan'
 
 
 def load_structure(path: str) -> Structure.Structure:

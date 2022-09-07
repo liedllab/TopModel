@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from Bio.PDB import vectors, Residue, Structure
 import numpy as np
-from .utils import GlycineException, PDBError
+from .errors import GlycineException, PDBError
 from .utils import ChiralCenters, StructuralIrregularity, SingleIrregularity
 
 
