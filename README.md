@@ -1,6 +1,6 @@
 # PDBear
 
-A small python script to check PDB structures.
+A python script to check PDB structures.
 
 ## Installation
 
@@ -16,7 +16,7 @@ pdbear --help
 
 # Command-Line Interface (CLI)
 ```bash
-pdbear -f path/to/file.pdb
+pdbear path/to/file(s).pdb
 ```
 
 PDBear is a small script that checks the chiralities and the amide bonds of the amino acids in a 
@@ -33,13 +33,18 @@ aminoacids are printed.
 
 The PDBear can assign `cis` and `trans` to the amide bonds depending on the dihedral angle between
 CA-C-N-CA. Amide bonds that could not be assigned to either `cis` or `trans` are labeled as
-`strange`.
+`non-planar`.
 Cis amide bonds to prolines are mentioned separately as they occur more frequently.
+
+## Clashes
+
+The PDBear detects Van der Waals clashes once the distance between any atom of the sidechain is
+closer to any atom of any other residue than their combined Van der Waals radii.
 
 # As a package
 
-PDBear can be imported as a package. The package contains the small modules `chirality` and
-`amide_bond` that provide functions to calculate the respective property.
+PDBear can be imported as a package. The package contains the small modules `chirality`,
+`amide_bond` and `clashes` that provide functions to calculate the respective property.
 
 ```python
 import pdbear # or
