@@ -6,24 +6,25 @@ from __future__ import annotations
 from collections import defaultdict
 from Bio.PDB import Structure, Residue, vectors
 import numpy as np
-from .utils import ProlineException, PDBError, StereoIsomers
+from .utils import ProlineException, PDBError, AmideBonds
+from .utils import StructuralIrregularity, CoupleIrregularity
 
 
-def get_stereo(pdb: Structure.Structure) -> dict[str, list[tuple[Residue.Residue, Residue.Residue]]]:
+def get_amid_stereo(pdb: Structure.Structure) -> dict[str, list[StructuralIrregularity]]:
     """Iterates over structure and yields result in a dictionary that maps the label to a list of
 Residues."""
 
     stereo = defaultdict(list)
     header = pdb.get_residues()
     tailer = pdb.get_residues()
-    next(tailer)
+    next(tailer) # advance second iterator so tailer is always one step ahead of header
     for head, tail in zip(header, tailer):
         try:
             label = assign_stereo(head, tail)
         except ProlineException:
-            label = StereoIsomers.CIS_PROLINE
-        res_number = head.get_id()[1]
-        stereo[label].append((head, tail))
+            label = AmideBonds.CIS_PROLINE
+
+        stereo[label].append(CoupleIrregularity(head, tail, label.value))
     return stereo
 
 
@@ -44,11 +45,11 @@ mapped to the labels `cis`, `trans` or `strange`."""
 
     angle = np.mod(angle, 2*np.pi)
     if 5*np.pi/6 <= angle <= 7*np.pi/6:
-        label = StereoIsomers.TRANS
+        label = AmideBonds.TRANS
     elif (0 <= angle <= np.pi/6) or (11*np.pi/6 <= angle <= 2*np.pi):
         if tail.resname == 'PRO':
             raise ProlineException
-        label = StereoIsomers.CIS
+        label = AmideBonds.CIS
     else:
-        label = StereoIsomers.INBETWEEN
+        label = AmideBonds.NON_PLANAR
     return label
