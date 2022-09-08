@@ -4,8 +4,12 @@ class ProlineException(Exception):
 
 
 class GlycineException(Exception):
-    """Glycine has no chiral centre"""
+    """Glycine has no chiral centre."""
 
 
 class PDBError(Exception):
-    """Raised when needed information is missing in Structure"""
+    """Raised when needed information is missing in Structure."""
+
+
+class PDBCodeError(Exception):
+    """Raised when the Code is not a valid PDBCode."""
