@@ -21,6 +21,21 @@ class Parser(Protocol):
         ...
 
 
+class hackyStructure(Structure):
+    def get_residues(self):
+        """return only non heteroatoms."""
+        for chain in self.get_chains():
+            for residue in chain:
+                if residue.resname in {'NME', 'HOH', 'ACE', 'WAT'}:
+                    continue
+                hetero, *_ = residue.get_id()
+                if hetero.strip() != '':
+                    continue
+                if residue.resname in {'NME', 'HOH', 'ACE', 'WAT'}:
+                    continue
+                yield residue
+
+
 def get_parser(filename: str) -> Parser:
     """return appropriate parser depending on filetype.
 :param filename: str
@@ -135,6 +150,8 @@ directory.
             parser: Parser = get_parser(filename)
 
         structure: Structure = struc_from_file(filename, parser)
+        # overwrite get_residues() function
+        structure.__class__ = hackyStructure
     return structure
 
 def main():

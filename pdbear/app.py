@@ -18,6 +18,7 @@ import click
 from pdbear import src
 from pdbear.src.utils import ChiralCenters, AmideBonds, Clashes
 from pdbear.src.errors import PDBError
+from pdbear.src.parser import get_structure
 
 
 class Color(Enum):
@@ -25,16 +26,6 @@ class Color(Enum):
     YELLOW = 'yellow'
     MAGENTA = 'magenta'
     CYAN = 'cyan'
-
-
-def load_structure(path: str) -> Structure.Structure:
-    """Load PDB structure from path"""
-    parser = PDBParser()
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", category=PDBExceptions.PDBConstructionWarning)
-        structure = parser.get_structure("", path)
-
-    return structure
 
 
 class App:
@@ -140,7 +131,7 @@ the structure."""
 @click.argument(
         "files",
         required=True,
-        type=click.Path(exists=True),
+        #type=click.Path(exists=True),
         nargs=-1, # unlimited number of arguments
         )
 @click.option("--amides", is_flag=True, default=True, show_default=True)
@@ -152,11 +143,12 @@ the structure."""
 def main(files: list[str], amides: bool, chiralities: bool, clashes: bool, pymol: bool,
         score: bool, quiet: bool) -> None:
     """Check PDB Structures for errors"""
+
     app = App(amides, chiralities, clashes)
     paths = (Path(file) for file in files)
     for path in paths:
         click.echo(click.style(f'{path.name.upper()}', bold=True))
-        struc = load_structure(path)
+        struc = get_structure(str(path))
         try:
             app.process_structure(struc)
         except PDBError as error:
