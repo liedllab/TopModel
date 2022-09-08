@@ -134,12 +134,15 @@ the structure."""
         #type=click.Path(exists=True),
         nargs=-1, # unlimited number of arguments
         )
-@click.option("--amides", is_flag=True, default=True, show_default=True)
-@click.option("--chiralities", is_flag=True, default=True, show_default=True)
-@click.option("--clashes", is_flag=True, default=True, show_default=True)
-@click.option("--pymol", "-p", is_flag=True, default=False, show_default=True)
-@click.option("--score", "-s", is_flag=True, default=False, show_default=True)
-@click.option("--quiet", "-q", is_flag=True, default=False, show_default=True)
+@click.option("--amides/--no-amides", is_flag=True, default=True)
+@click.option("--chiralities/--no-chiralities", is_flag=True, default=True)
+@click.option("--clashes/--no-clashes", is_flag=True, default=True)
+@click.option("--score/--no-score", is_flag=True, default=True)
+@click.option("--quiet/--verbose", "-q/-v", is_flag=True, default=False)
+@click.option("--pymol", "-p", is_flag=True, default=False, show_default=True,
+              help=('Open the structure in PyMOL with the irregularities annotated.'
+                  'Requires pymol to be in path')
+        )
 def main(files: list[str], amides: bool, chiralities: bool, clashes: bool, pymol: bool,
         score: bool, quiet: bool) -> None:
     """Check PDB Structures for errors"""
