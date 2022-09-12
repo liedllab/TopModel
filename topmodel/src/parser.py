@@ -12,6 +12,7 @@ from Bio.PDB import PDBParser, PDBList, PDBExceptions
 from Bio.PDB.Structure import Structure
 
 from .errors import PDBCodeError
+from .utils import BlockSTDOUT, SelectiveStructure
 
 
 class Parser(Protocol):
@@ -19,40 +20,6 @@ class Parser(Protocol):
     def get_structure(self, identifier: str, filename: str) -> Structure:
         """get structure from filename."""
         ...
-
-
-class SelectiveStructure(Structure):
-    """Wrap Structure functionality with selective output of residues."""
-    def get_residues(self):
-        """return only non heteroatoms."""
-        for chain in self.get_chains():
-            for residue in chain:
-                if residue.resname in {'NME', 'HOH', 'ACE', 'WAT'}:
-                    continue
-                hetero, *_ = residue.get_id()
-                if hetero.strip() != '':
-                    continue
-                if residue.resname in {'NME', 'HOH', 'ACE', 'WAT'}:
-                    continue
-                yield residue
-
-
-class BlockSTDOUT:
-    """Context manager to block all stdout and stderr calls.
-Usefull for library methods that print information instead of using warnings."""
-    def __init__(self):
-        self._original_stdout = sys.stdout
-        self._original_stderr = sys.stderr
-
-    def __enter__(self):
-        sys.stdout = open(os.devnull, 'w', encoding='utf8')
-        sys.stderr = open(os.devnull, 'w', encoding='utf8')
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout.close()
-        sys.stderr.close()
-        sys.stdout = self._original_stdout
-        sys.stderr = self._original_stderr
 
 
 def get_parser(filename: Path | str) -> Parser:
@@ -64,15 +31,25 @@ def get_parser(filename: Path | str) -> Parser:
 :raises: ValueError
     if no appropriate parser could be assigned."""
     filename = str(filename)
-    match filename.rsplit('.', maxsplit=1)[-1]:
-        case 'mmcif' | 'cif':
-            parser = MMCIFParser()
-        case 'mmtf':
-            parser = MMTFParser()
-        case 'pdb':
-            parser = PDBParser()
-        case ending:
-            raise ValueError(f"No parser available for {ending} format")
+    suffix = filename.rsplit('.', maxsplit=1)[-1].lower()
+
+    if suffix == 'mmcif' or suffix == 'cif':
+        parser = MMCIFParser()
+    elif suffix == 'mmtf':
+        parser = MMTFParser()
+    elif suffix == 'pdb':
+        parser = PDBParser()
+    else:
+        raise ValueError(f'No parser available for {suffix} format')
+#    match filename.rsplit('.', maxsplit=1)[-1]:
+#        case 'mmcif' | 'cif':
+#            parser = MMCIFParser()
+#        case 'mmtf':
+#            parser = MMTFParser()
+#        case 'pdb':
+#            parser = PDBParser()
+#        case ending:
+#            raise ValueError(f"No parser available for {ending} format")
     return parser
 
 
@@ -145,8 +122,8 @@ directory.
             parser: Parser = get_parser(filename)
         except ValueError:
             validate_pdb_code(str(filename))
-            filename: str = from_database(filename, directory)
-            parser: Parser = get_parser(filename)
+            filename = from_database(filename, directory)
+            parser = get_parser(filename)
 
         structure: Structure = struc_from_file(filename, parser)
         # replace get_residues() function

@@ -6,17 +6,17 @@ from __future__ import annotations
 from collections import defaultdict
 from Bio.PDB import Structure, Residue, vectors
 import numpy as np
-from .errors import ProlineException, PDBError
+from .errors import ProlineException, MissingInformationError
 from .utils import AmideBonds, StructuralIrregularity, CoupleIrregularity
 
 
-def get_amid_stereo(pdb: Structure.Structure) -> dict[str, list[StructuralIrregularity]]:
+def get_amid_stereo(struc: Structure.Structure) -> dict[str, list[StructuralIrregularity]]:
     """Iterates over structure and yields result in a dictionary that maps the label to a list of
 Residues."""
 
     stereo = defaultdict(list)
-    header = pdb.get_residues()
-    tailer = pdb.get_residues()
+    header = struc.get_residues()
+    tailer = struc.get_residues()
     next(tailer) # advance second iterator so tailer is always one step ahead of header
     for head, tail in zip(header, tailer):
         try:
@@ -41,7 +41,8 @@ mapped to the labels `cis`, `trans` or `strange`."""
         tail_atoms = {atom.get_name() for atom in tail.get_atoms()}
         diff = {'C', 'CA', 'N'}.difference(head_atoms.union(tail_atoms))
         diff_str = ", ".join(diff)
-        raise PDBError(f"{diff_str} needed to determine the amide bond orientation") from error
+        raise MissingInformationError(f"{diff_str} needed to determine the amide bond orientation")\
+                from error
 
     if head['C'] - tail['N'] > 2:
         return AmideBonds.TRANS

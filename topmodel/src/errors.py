@@ -7,7 +7,7 @@ class GlycineException(Exception):
     """Glycine has no chiral centre."""
 
 
-class PDBError(Exception):
+class MissingInformationError(Exception):
     """Raised when needed information is missing in Structure."""
 
 

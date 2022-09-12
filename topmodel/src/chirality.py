@@ -5,16 +5,16 @@ from __future__ import annotations
 from collections import defaultdict
 from Bio.PDB import vectors, Residue, Structure
 import numpy as np
-from .errors import GlycineException, PDBError
+from .errors import GlycineException, MissingInformationError
 from .utils import ChiralCenters, StructuralIrregularity, SingleIrregularity
 
 
-def get_chirality(pdb: Structure.Structure) -> dict[str, list[StructuralIrregularity]]:
+def get_chirality(struc: Structure.Structure) -> dict[str, list[StructuralIrregularity]]:
     """Iterate over structure to yield a defaultdict with `L` and `D` as keys and lists of Residues
 as corresponding values."""
 
     chirality = defaultdict(list)
-    for residue in pdb.get_residues():
+    for residue in struc.get_residues():
         try:
             label = assign_chirality_amino_acid(residue)
         except GlycineException:
@@ -36,9 +36,9 @@ def assign_chirality_amino_acid(residue: Residue.Residue) -> str:
     except KeyError as error:
         if residue.resname == 'GLY':
             raise GlycineException from error
-        raise PDBError(
-        "No H-alphas are in the PDB structure which is needed to \
-determine the chiralities") from error
+        raise MissingInformationError(
+        "No H-alphas are in the structure which is needed to determine the chiralities"
+        ) from error
 
     theta_zero = get_theta(atoms['N'], transformer)
     rotations = {name: np.mod(get_theta(vec, transformer) - theta_zero, 2*np.pi) \

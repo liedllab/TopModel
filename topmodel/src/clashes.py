@@ -16,14 +16,14 @@ VDW_RADII = _df / 100 # conversion from pm to angstrom
 del _df # so it cant be imported anymore
 
 
-def get_clashes(pdb: Structure.Structure) -> dict[str, list[StructuralIrregularity]]:
+def get_clashes(struc: Structure.Structure) -> dict[str, list[StructuralIrregularity]]:
     """Iterates over structure and yields a set of clashes."""
     all_clashes = set()
-    _info = ((atom.coord, atom.parent) for atom in pdb.get_atoms())
+    _info = ((atom.coord, atom.parent) for atom in struc.get_atoms())
     coord, labels = zip(*_info)
     all_points = spatial.KDTree(coord)
 
-    for residue in pdb.get_residues():
+    for residue in struc.get_residues():
         clashes = compute_clash(residue, all_points, labels)
         for clash in clashes:
             all_clashes.add(frozenset([residue, clash]))
@@ -36,7 +36,7 @@ def compute_clash(residue: Residue.Residue,
                   tree: spatial.KDTree,
                   labels: list[Residue.Residue],
                   ) -> set[Residue.Residue]:
-    """return clashes of a residue as a set using a KDTree and corresponding labels."""
+    """Return clashes of a residue as a set using a KDTree and corresponding labels."""
     info = ((atom.coord, VDW_RADII.loc[atom.element.capitalize()].values[0])
             for atom in sidechains(residue))
     coords, radii = zip(*info)

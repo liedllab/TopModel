@@ -1,2 +1,2 @@
-"""Calculate chirality and amide bond stereoisomerism to detect errors in PDBs"""
+"""Detect errors in structure models."""
 from .src import *

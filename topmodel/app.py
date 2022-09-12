@@ -14,10 +14,10 @@ from typing import Callable
 from Bio.PDB.Structure import Structure
 import click
 
-from pdbear import src
-from pdbear.src.utils import ChiralCenters, AmideBonds, Clashes
-from pdbear.src.errors import PDBError, PDBCodeError
-from pdbear.src.parser import get_structure
+from topmodel import src
+from topmodel.src.utils import ChiralCenters, AmideBonds, Clashes
+from topmodel.src.errors import MissingInformationError, PDBCodeError
+from topmodel.src.parser import get_structure
 
 
 class Color(Enum):
@@ -180,7 +180,7 @@ def main(files: list[str],
             raise SystemExit() from error
         try:
             app.process_structure(struc)
-        except PDBError as error:
+        except MissingInformationError as error:
             click.echo(click.style(error, fg='white', bg='red', bold=True))
             raise SystemExit() from error
 

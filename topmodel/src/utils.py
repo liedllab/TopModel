@@ -36,7 +36,7 @@ class StructuralIrregularity(Protocol):
 
 
 class CoupleIrregularity:
-    """handles irregularities that depend on two residues."""
+    """Handles irregularities that depend on two residues."""
     def __init__(self, res_a: Residue, res_b: Residue, score) -> CoupleIrregularity:
         self.res_a = SingleIrregularity(res_a, 0)
         self.res_b = SingleIrregularity(res_b, 0)
@@ -50,16 +50,50 @@ class CoupleIrregularity:
 
 
 class SingleIrregularity:
-    """handles irregularities that only depend on one residue."""
+    """Handles irregularities that only depend on one residue."""
     def __init__(self, residue: Residue, score) -> StructuralIrregularity:
         self.code = seq1(residue.get_resname())
         self.number = residue.get_id()[1]
         self.score = score
 
     def to_pymol(self) -> str:
-        """convert to pymol selectable string."""
+        """Convert to pymol selectable string."""
         return f'resid {self.number}'
 
     def to_cli(self) -> str:
-        """convert to displayable string in CLI."""
+        """Convert to displayable string in CLI."""
         return f'{self.code}{self.number:03}'
+
+
+class BlockSTDOUT:
+    """Context manager to block all stdout and stderr calls.
+Usefull for library methods that print information instead of using warnings."""
+    def __init__(self):
+        self._original_stdout = sys.stdout
+        self._original_stderr = sys.stderr
+
+    def __enter__(self):
+        sys.stdout = open(os.devnull, 'w', encoding='utf8')
+        sys.stderr = open(os.devnull, 'w', encoding='utf8')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stderr.close()
+        sys.stdout = self._original_stdout
+        sys.stderr = self._original_stderr
+
+
+class SelectiveStructure(Structure):
+    """Wrap Structure functionality with selective output of residues."""
+    def get_residues(self):
+        """return only non heteroatoms."""
+        for chain in self.get_chains():
+            for residue in chain:
+                if residue.resname in {'NME', 'HOH', 'ACE', 'WAT'}:
+                    continue
+                hetero, *_ = residue.get_id()
+                if hetero.strip() != '':
+                    continue
+                if residue.resname in {'NME', 'HOH', 'ACE', 'WAT'}:
+                    continue
+                yield residue
