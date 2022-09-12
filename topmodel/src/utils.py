@@ -9,7 +9,7 @@ from Bio.SeqUtils import seq1
 class ChiralCenters(Enum):
     """Enumeration of L/D Chirality"""
     L = 0
-    D = 2
+    D = 10
 
 
 class AmideBonds(Enum):
@@ -17,7 +17,7 @@ class AmideBonds(Enum):
     TRANS = 0
     CIS_PROLINE = 1
     NON_PLANAR = 2
-    CIS = 3
+    CIS = 10
 
 
 class Clashes(Enum):
