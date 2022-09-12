@@ -200,4 +200,3 @@ def main(files: list[str],
 
 if __name__ == '__main__':
     main() # pylint: disable=no-value-for-parameter
-        click.echo('-'*app.width)

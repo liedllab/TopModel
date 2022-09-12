@@ -1,8 +1,11 @@
 """Enumerated Labels and custom exception and errors."""
 from __future__ import annotations
+import os
+import sys
 from typing import Protocol
 from enum import Enum
 from Bio.PDB.Residue import Residue
+from Bio.PDB.Structure import Structure
 from Bio.SeqUtils import seq1
 
 

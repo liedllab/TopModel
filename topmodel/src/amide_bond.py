@@ -49,9 +49,8 @@ mapped to the labels `cis`, `trans` or `strange`."""
     angle = np.mod(angle, 2*np.pi)
     if 5*np.pi/6 <= angle <= 7*np.pi/6:
         return AmideBonds.TRANS
-    elif (0 <= angle <= np.pi/6) or (11*np.pi/6 <= angle <= 2*np.pi):
+    if (0 <= angle <= np.pi/6) or (11*np.pi/6 <= angle <= 2*np.pi):
         if tail.resname == 'PRO':
             raise ProlineException
         return AmideBonds.CIS
-    else:
-        return AmideBonds.NON_PLANAR
+    return AmideBonds.NON_PLANAR

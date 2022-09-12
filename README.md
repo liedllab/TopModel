@@ -1,59 +1,60 @@
-# PDBear
+# TopModel
 
-A python script to check PDB structures.
+A python script to check structure models.
 
 ## Installation
 
 ```bash
-pip install git+https://github.com/liedllab/PDBear.git
+pip install git+https://github.com/liedllab/topmodel.git
 ```
 
 ## Test Installation
 
 ```bash
-pdbear --help
+topmodel --help
 ```
 
 # Command-Line Interface (CLI)
 ```bash
-pdbear path/to/file(s).pdb
+topmodel path/to/file*.pdb
 ```
 
-PDBear is a small script that checks the chiralities and the amide bonds of the amino acids in a 
-given PDB structure. Optionally, the PDBear can open the structure in PyMOL. The problems that were
-found in the PDB structure by the PDBear are highlighted accordingly. For this PyMOL needs to be in
-the PATH.
+TopModel is a command line tool that checks the chiralities, the amide bonds and overall clashes of 
+the amino acids in a structure model. Optionally, the structure can be opened in PyMOL to visualize 
+the issues found. For this PyMOL needs to be in PATH.
 
 ## Chirality
 
-The PDBear can assign `L` and `D` to aminoacids. In the command-line interface (CLI) only the `D`
-aminoacids are printed.
+TopModel can assign `L` and `D` to aminoacids. In the command-line interface (CLI) only the `D`
+aminoacids are shown.
 
 ## Amide bonds
 
-The PDBear can assign `CIS` and `TRANS` to the amide bonds depending on the dihedral angle between
+TopModel can assign `CIS` and `TRANS` to the amide bonds depending on the dihedral angle between
 CA-C-N-CA. Amide bonds that could not be assigned to either `CIS` or `TRANS` are labeled as
 `NON_PLANAR`.
 Cis amide bonds to prolines are labelled separately as they occur more frequently.
 
 ## Clashes
 
-The PDBear detects Van der Waals clashes once the distance between any atom of the sidechain is
-closer to any atom of any other residue than their combined Van der Waals radii.
+TopModel detects Van der Waals clashes once the distance between any atom of the sidechain is
+closer to any other atom than their combined Van der Waals radii.
 
 # As a package
 
-PDBear can be imported as a package. The package contains the small modules `chirality`,
+TopModel can be imported as a package. The package contains the small modules `chirality`,
 `amide_bond` and `clashes` that provide functions to calculate the respective property.
 
 ```python
-import pdbear # or
-from pdbear import chirality, amide_bond
+import topmodel # or
+from topmodel import chirality, amide_bond, clashes
 ```
 
 # Dependencies
 
 - biopython
+- scipy
+- mendeleev
 - Click
 - colorama
 - PyMOL (to open the structure in PyMOL)

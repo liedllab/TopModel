@@ -1,7 +1,5 @@
 """Handle the loading of the Structure from User input."""
 from __future__ import annotations
-import sys
-import os
 from pathlib import Path
 import tempfile
 from typing import Protocol
@@ -33,7 +31,7 @@ def get_parser(filename: Path | str) -> Parser:
     filename = str(filename)
     suffix = filename.rsplit('.', maxsplit=1)[-1].lower()
 
-    if suffix == 'mmcif' or suffix == 'cif':
+    if suffix in {'mmcif', 'cif'}:
         parser = MMCIFParser()
     elif suffix == 'mmtf':
         parser = MMTFParser()
