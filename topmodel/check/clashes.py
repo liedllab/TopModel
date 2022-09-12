@@ -6,7 +6,7 @@ from scipy import spatial
 from mendeleev import fetch
 from Bio.PDB import Structure, Residue, Entity
 
-from .utils import Clashes, StructuralIrregularity, CoupleIrregularity
+from topmodel.util.utils import Clashes, StructuralIrregularity, CoupleIrregularity
 
 
 # perfoms this on import

@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections import defaultdict
 from Bio.PDB import vectors, Residue, Structure
 import numpy as np
-from .errors import GlycineException, MissingInformationError
-from .utils import ChiralCenters, StructuralIrregularity, SingleIrregularity
+from topmodel.util.errors import GlycineException, MissingInformationError
+from topmodel.util.utils import ChiralCenters, StructuralIrregularity, SingleIrregularity
 
 
 def get_chirality(struc: Structure.Structure) -> dict[str, list[StructuralIrregularity]]:

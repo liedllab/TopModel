@@ -14,10 +14,10 @@ from typing import Callable
 from Bio.PDB.Structure import Structure
 import click
 
-from topmodel import src
-from topmodel.src.utils import ChiralCenters, AmideBonds, Clashes
-from topmodel.src.errors import MissingInformationError, PDBCodeError
-from topmodel.src.parser import get_structure
+from topmodel import check
+from topmodel.util.utils import ChiralCenters, AmideBonds, Clashes
+from topmodel.util.errors import MissingInformationError, PDBCodeError
+from topmodel.util.parser import get_structure
 
 
 class Color(Enum):
@@ -34,24 +34,24 @@ class App:
         self.funcs: list[Callable] = []
         self.display: dict[Enum, Color] = {}
         if amides:
-            self.funcs.append(src.get_amid_stereo)
+            self.funcs.append(check.get_amide_stereo)
             self.display.update({
                 AmideBonds.CIS: Color.RED,
                 AmideBonds.CIS_PROLINE: Color.YELLOW,
                 AmideBonds.NON_PLANAR: Color.YELLOW,
                 })
         if chiralities:
-            self.funcs.append(src.get_chirality)
+            self.funcs.append(check.get_chirality)
             self.display.update(
                         {ChiralCenters.D:Color.MAGENTA},
                         )
         if clashes:
-            self.funcs.append(src.get_clashes)
+            self.funcs.append(check.get_clashes)
             self.display.update(
                         {Clashes.VDW: Color.CYAN},
                         )
         try:
-            self.width = os.get_terminal_size().columns
+            self.width = min(80, os.get_terminal_size().columns)
         except OSError:
             self.width = 80
 
@@ -152,9 +152,9 @@ the structure."""
 @click.option("--amides/--no-amides", is_flag=True, default=True)
 @click.option("--chiralities/--no-chiralities", is_flag=True, default=True)
 @click.option("--clashes/--no-clashes", is_flag=True, default=True)
-@click.option("--score/--no-score", is_flag=True, default=True)
-@click.option("--quiet/--verbose", "-q/-v", is_flag=True, default=False)
-@click.option("--pymol", "-p", is_flag=True, default=False, show_default=True,
+@click.option("--score/--no-score", is_flag=True, default=False)
+@click.option("--quiet/--verbose", is_flag=True, default=False)
+@click.option("--pymol", is_flag=True, default=False, show_default=True,
               help=('Open the structure in PyMOL with the irregularities annotated. '
                   'Requires pymol to be in path.')
         )
@@ -166,7 +166,7 @@ def main(files: list[str],
         quiet: bool,
         pymol: bool,
         ) -> None:
-    """Check PDB Structures for errors"""
+    """Check structure models for errors"""
 
     app = App(amides, chiralities, clashes)
     paths = (Path(file) for file in files)

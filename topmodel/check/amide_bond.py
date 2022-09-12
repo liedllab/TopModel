@@ -6,11 +6,11 @@ from __future__ import annotations
 from collections import defaultdict
 from Bio.PDB import Structure, Residue, vectors
 import numpy as np
-from .errors import ProlineException, MissingInformationError
-from .utils import AmideBonds, StructuralIrregularity, CoupleIrregularity
+from topmodel.util.errors import ProlineException, MissingInformationError
+from topmodel.util.utils import AmideBonds, StructuralIrregularity, CoupleIrregularity
 
 
-def get_amid_stereo(struc: Structure.Structure) -> dict[str, list[StructuralIrregularity]]:
+def get_amide_stereo(struc: Structure.Structure) -> dict[str, list[StructuralIrregularity]]:
     """Iterates over structure and yields result in a dictionary that maps the label to a list of
 Residues."""
 
