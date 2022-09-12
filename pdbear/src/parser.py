@@ -21,7 +21,8 @@ class Parser(Protocol):
         ...
 
 
-class hackyStructure(Structure):
+class SelectiveStructure(Structure):
+    """Wrap Structure functionality with selective output of residues."""
     def get_residues(self):
         """return only non heteroatoms."""
         for chain in self.get_chains():
@@ -34,43 +35,6 @@ class hackyStructure(Structure):
                 if residue.resname in {'NME', 'HOH', 'ACE', 'WAT'}:
                     continue
                 yield residue
-
-
-def get_parser(filename: str) -> Parser:
-    """return appropriate parser depending on filetype.
-:param filename: str
-
-:returns: Parser
-
-:raises: ValueError
-    if no appropriate parser could be assigned."""
-
-    match filename.split('.')[-1]:
-        case 'mmcif' | 'cif':
-            parser = MMCIFParser()
-        case 'mmtf':
-            parser = MMTFParser()
-        case 'pdb':
-            parser = PDBParser()
-        case ending:
-            raise ValueError(f"No parser available for {ending} format")
-    return parser
-
-
-def validate_pdb_code(code: str) -> None:
-    """check if the code is a valid PDB code.
-
-:param code: str
-:raises: PDBCodeError
-    if the provided code does not conform to the required format."""
-
-    code_length = 4
-    if len(code) != code_length:
-        raise PDBCodeError(f"{code} is does not match the required length of {code_length}")
-    if not code.isalnum():
-        raise PDBCodeError(f"Invalid characters detected in {code}. Only 0-9 and A-Z is allowed")
-    if not code[0].isdecimal():
-        raise PDBCodeError("First character is required to be numeric.")
 
 
 class BlockSTDOUT:
@@ -91,7 +55,43 @@ Usefull for library methods that print information instead of using warnings."""
         sys.stderr = self._original_stderr
 
 
-def from_database(code: str, directory: str) -> str:
+def get_parser(filename: Path | str) -> Parser:
+    """return appropriate parser depending on filetype.
+:param filename: str
+
+:returns: Parser
+
+:raises: ValueError
+    if no appropriate parser could be assigned."""
+    filename = str(filename)
+    match filename.rsplit('.', maxsplit=1)[-1]:
+        case 'mmcif' | 'cif':
+            parser = MMCIFParser()
+        case 'mmtf':
+            parser = MMTFParser()
+        case 'pdb':
+            parser = PDBParser()
+        case ending:
+            raise ValueError(f"No parser available for {ending} format")
+    return parser
+
+
+def validate_pdb_code(code: str) -> None:
+    """check if the code is a valid PDB code.
+
+:param code: str
+:raises: PDBCodeError
+    if the provided code does not conform to the required format."""
+    code_length = 4
+    if len(code) != code_length:
+        raise PDBCodeError(f"{code} is does not match the required length of {code_length}")
+    if not code.isalnum():
+        raise PDBCodeError(f"Invalid characters detected in {code}. Only 0-9 and A-Z is allowed")
+    if not code[0].isdecimal():
+        raise PDBCodeError("First character is required to be numeric.")
+
+
+def from_database(code: Path | str, directory: Path | str) -> Path:
     """Retrieve a code from the PDB database.
 
 :param code: str
@@ -103,19 +103,20 @@ def from_database(code: str, directory: str) -> str:
     path to downloaded file
 
 :raises: KeyError if no PDB was downloaded."""
+    code = str(code)
+    directory = Path(directory)
 
     with BlockSTDOUT():
         database = PDBList()
-        database.retrieve_pdb_file(code, pdir=directory)
-        directory = Path(directory)
+        database.retrieve_pdb_file(code, pdir=str(directory))
     try:
         file = next(directory.glob(f'*{code}*'))
     except StopIteration:
         raise KeyError(f'Desired structure \"{code}\" does not exist') from None
-    return str(file)
+    return file
 
 
-def struc_from_file(filename: str, parser: Parser) -> Structure:
+def struc_from_file(filename: Path | str, parser: Parser) -> Structure:
     """Construct a Structure given the file and a parser.
 
 :param filename: str
@@ -124,15 +125,14 @@ def struc_from_file(filename: str, parser: Parser) -> Structure:
     Parser that can construct the Structure object.
 
 :returns: Structure"""
-
     stem = Path(filename).stem
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=PDBExceptions.PDBConstructionWarning)
-        structure = parser.get_structure(stem, filename)
+        structure = parser.get_structure(stem, str(filename))
     return structure
 
 
-def get_structure(filename: str) -> Structure:
+def get_structure(filename: Path | str) -> Structure:
     """Get Structure from filename or PDB Code. Downloads the files from the PDB into a temporary
 directory.
 
@@ -140,21 +140,22 @@ directory.
     path to file or PDB code.
 
 :returns: Structure"""
-
     with tempfile.TemporaryDirectory() as directory:
         try:
             parser: Parser = get_parser(filename)
         except ValueError:
-            validate_pdb_code(filename)
+            validate_pdb_code(str(filename))
             filename: str = from_database(filename, directory)
             parser: Parser = get_parser(filename)
 
         structure: Structure = struc_from_file(filename, parser)
-        # overwrite get_residues() function
-        structure.__class__ = hackyStructure
+        # replace get_residues() function
+        structure.__class__ = SelectiveStructure
     return structure
 
+
 def main():
+    """Main."""
     pass
 
 if __name__ == '__main__':

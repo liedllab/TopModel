@@ -43,13 +43,14 @@ mapped to the labels `cis`, `trans` or `strange`."""
         diff_str = ", ".join(diff)
         raise PDBError(f"{diff_str} needed to determine the amide bond orientation") from error
 
+    if head['C'] - tail['N'] > 2:
+        return AmideBonds.TRANS
     angle = np.mod(angle, 2*np.pi)
     if 5*np.pi/6 <= angle <= 7*np.pi/6:
-        label = AmideBonds.TRANS
+        return AmideBonds.TRANS
     elif (0 <= angle <= np.pi/6) or (11*np.pi/6 <= angle <= 2*np.pi):
         if tail.resname == 'PRO':
             raise ProlineException
-        label = AmideBonds.CIS
+        return AmideBonds.CIS
     else:
-        label = AmideBonds.NON_PLANAR
-    return label
+        return AmideBonds.NON_PLANAR
