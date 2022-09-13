@@ -2,22 +2,22 @@
 are assigned the `strange` label."""
 
 from __future__ import annotations
-
-from collections import defaultdict
 from Bio.PDB import Structure, Residue, vectors
 import numpy as np
 from topmodel.util.errors import ProlineException, MissingInformationError
-from topmodel.util.utils import AmideBonds, StructuralIrregularity, CoupleIrregularity
+from topmodel.util.utils import AmideBonds, CoupleIrregularity
 
 
-def get_amide_stereo(struc: Structure.Structure) -> dict[str, list[StructuralIrregularity]]:
+def get_amide_stereo(
+        struc: Structure.Structure
+        ) -> dict[AmideBonds, list[CoupleIrregularity]]:
     """Iterates over structure and yields result in a dictionary that maps the label to a list of
 Residues."""
 
-    stereo = defaultdict(list)
+    stereo: dict[AmideBonds, list[CoupleIrregularity]] = {e: [] for e in AmideBonds}
     header = struc.get_residues()
     tailer = struc.get_residues()
-    next(tailer) # advance second iterator so tailer is always one step ahead of header
+    next(tailer)  # advance second iterator so tailer is always one step ahead of header
     for head, tail in zip(header, tailer):
         try:
             label = assign_stereo(head, tail)
@@ -28,7 +28,7 @@ Residues."""
     return stereo
 
 
-def assign_stereo(head: Residue.Residue, tail: Residue.Residue) -> str:
+def assign_stereo(head: Residue.Residue, tail: Residue.Residue) -> AmideBonds:
     """Calculates dihedral angle of amide bond between Residue `head` and `tail`. The angle then is
 mapped to the labels `cis`, `trans` or `strange`."""
     try:
@@ -41,8 +41,9 @@ mapped to the labels `cis`, `trans` or `strange`."""
         tail_atoms = {atom.get_name() for atom in tail.get_atoms()}
         diff = {'C', 'CA', 'N'}.difference(head_atoms.union(tail_atoms))
         diff_str = ", ".join(diff)
-        raise MissingInformationError(f"{diff_str} needed to determine the amide bond orientation")\
-                from error
+        raise MissingInformationError(
+                f'{diff_str} needed to determine the amide bond orientation'
+                ) from error
 
     if head['C'] - tail['N'] > 2:
         return AmideBonds.TRANS

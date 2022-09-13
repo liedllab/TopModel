@@ -6,17 +6,17 @@ from scipy import spatial
 from mendeleev import fetch
 from Bio.PDB import Structure, Residue, Entity
 
-from topmodel.util.utils import Clashes, StructuralIrregularity, CoupleIrregularity
+from topmodel.util.utils import Clashes, CoupleIrregularity
 
 
 # perfoms this on import
 _df = fetch.fetch_table('elements')[['symbol', 'vdw_radius']]
 _df = _df.set_index('symbol')
-VDW_RADII = _df / 100 # conversion from pm to angstrom
-del _df # so it cant be imported anymore
+VDW_RADII = _df / 100  # conversion from pm to angstrom
+del _df  # so it cant be imported anymore
 
 
-def get_clashes(struc: Structure.Structure) -> dict[str, list[StructuralIrregularity]]:
+def get_clashes(struc: Structure.Structure) -> dict[Clashes, list[CoupleIrregularity]]:
     """Iterates over structure and yields a set of clashes."""
     all_clashes = set()
     _info = ((atom.coord, atom.parent) for atom in struc.get_atoms())

@@ -2,7 +2,7 @@
 from __future__ import annotations
 import os
 import sys
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 from enum import Enum
 from Bio.PDB.Residue import Residue
 from Bio.PDB.Structure import Structure
@@ -28,9 +28,11 @@ class Clashes(Enum):
     VDW = 1
 
 
+@runtime_checkable
 class StructuralIrregularity(Protocol):
     """Irregularity interface."""
     score: float
+
     def to_pymol(self):
         ...
 
@@ -40,7 +42,7 @@ class StructuralIrregularity(Protocol):
 
 class CoupleIrregularity:
     """Handles irregularities that depend on two residues."""
-    def __init__(self, res_a: Residue, res_b: Residue, score) -> CoupleIrregularity:
+    def __init__(self, res_a: Residue, res_b: Residue, score):
         self.res_a = SingleIrregularity(res_a, 0)
         self.res_b = SingleIrregularity(res_b, 0)
         self.score = score
@@ -51,10 +53,14 @@ class CoupleIrregularity:
     def to_cli(self) -> str:
         return f'{self.res_a.to_cli()}-{self.res_b.to_cli()}'
 
+    def __repr__(self):
+        cls = self.__class__
+        return f'{cls.__name__}({self.res_a}, {self.res_b}, {self.score!r})'
+
 
 class SingleIrregularity:
     """Handles irregularities that only depend on one residue."""
-    def __init__(self, residue: Residue, score) -> StructuralIrregularity:
+    def __init__(self, residue: Residue, score):
         self.code = seq1(residue.get_resname())
         self.number = residue.get_id()[1]
         self.score = score
@@ -66,6 +72,14 @@ class SingleIrregularity:
     def to_cli(self) -> str:
         """Convert to displayable string in CLI."""
         return f'{self.code}{self.number:03}'
+
+    def __repr__(self):
+        cls = self.__class__
+        return f'{cls.__name__}({self.code!r}, {self.number!r}, {self.score!r})'
+
+    def __str__(self):
+        cls = self.__class__
+        return f'{cls.__name__}({self.code!r}, {self.number!r})'
 
 
 class BlockSTDOUT:

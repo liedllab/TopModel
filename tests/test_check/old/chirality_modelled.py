@@ -6,7 +6,7 @@ from hypothesis.strategies import integers, sampled_from, composite
 import pytest
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.PDBExceptions import PDBConstructionWarning
-from pdbear import chirality
+from topmodel.check import chirality
 
 BASE = Path('./data/modelled')
 with open(BASE / "config.yaml") as f:
