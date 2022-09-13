@@ -5,6 +5,8 @@ from Bio.PDB import PDBParser
 from Bio.PDB.PDBExceptions import PDBConstructionWarning
 from topmodel.check import amide_bond
 from topmodel.util.utils import AmideBonds, StructuralIrregularity
+from topmodel.util.errors import MissingInformationError
+from topmodel.util.parser import get_structure as special_get_structure
 
 
 parser = PDBParser()
@@ -52,3 +54,23 @@ def test_assign_alanine_dipeptide(pdb_file, expected):
     struc = get_structure(pdb_file)
     a, b = struc.get_residues()
     assert amide_bond.assign_stereo(a, b) is expected
+
+
+class Test7SG5:
+    file = './data/fileformats/7SG5_model.pdb'
+
+    def test_7SG5_failure(self):
+        struc = get_structure(self.file)
+        *_, a, b = struc.get_residues()
+        with pytest.raises(MissingInformationError):
+            amide_bond.assign_stereo(a, b)
+
+    def test_7SG5_and_solution(self):
+        struc = special_get_structure(self.file)
+        *_, a, b = struc.get_residues()
+        amide_bond.assign_stereo(a, b)
+
+    def test_7SG5_cis_amides(self):
+        struc = special_get_structure(self.file)
+        stereo = amide_bond.get_amide_stereo(struc)
+        assert len(stereo[AmideBonds.CIS]) == 3
