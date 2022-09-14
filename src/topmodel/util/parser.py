@@ -1,6 +1,7 @@
 """Handle the loading of the Structure from User input."""
 from __future__ import annotations
 from pathlib import Path
+import re
 import tempfile
 from typing import Protocol, runtime_checkable
 import warnings
@@ -18,7 +19,6 @@ class Parser(Protocol):
     """Parser Protocol which the other functions depend on."""
     def get_structure(self, identifier: str, filename: str) -> Structure:
         """get structure from filename."""
-        ...
 
 
 def get_parser(filename: Path | str) -> Parser:
@@ -52,19 +52,12 @@ def get_parser(filename: Path | str) -> Parser:
 #            raise ValueError(f"No parser available for {ending} format")
 
 
-def validate_pdb_code(code: str) -> None:
-    """check if the code is a valid PDB code.
+class PDBCode(str):
+    _PATTERN = re.compile('[0-9]{1}[0-9a-zA-Z]{3}')
 
-:param code: str
-:raises: PDBCodeError
-    if the provided code does not conform to the required format."""
-    code_length = 4
-    if len(code) != code_length:
-        raise PDBCodeError(f"{code} is does not match the required length of {code_length}")
-    if not code.isalnum():
-        raise PDBCodeError(f"Invalid characters detected in {code}. Only 0-9 and A-Z is allowed")
-    if not code[0].isdecimal():
-        raise PDBCodeError("First character is required to be numeric.")
+    @property
+    def valid(self) -> bool:
+        return bool(self._PATTERN.fullmatch(self))
 
 
 def from_database(code: Path | str, directory: Path | str) -> Path:
@@ -79,16 +72,19 @@ def from_database(code: Path | str, directory: Path | str) -> Path:
     path to downloaded file
 
 :raises: KeyError if no PDB was downloaded."""
-    code = str(code)
+    code = PDBCode(code)
+    if not code.valid:
+        raise PDBCodeError('Invalid PDB access code')
     directory = Path(directory)
 
     with BlockSTDOUT():
         database = PDBList()
         database.retrieve_pdb_file(code, pdir=str(directory))
     try:
-        file = next(directory.glob(f'*{code}*'))
+        file = next(directory.glob('*'))
     except StopIteration:
-        raise KeyError(f'Desired structure \"{code}\" does not exist') from None
+        raise KeyError(f'Desired structure \"{code}\" does not exist or could not be retrieved')\
+                from None
     return file
 
 
@@ -120,7 +116,6 @@ directory.
         try:
             parser: Parser = get_parser(filename)
         except ValueError:
-            validate_pdb_code(str(filename))
             filename = from_database(filename, directory)
             parser = get_parser(filename)
 

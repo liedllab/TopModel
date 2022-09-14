@@ -187,12 +187,12 @@ def main(files: list[str],
             struc = get_structure(path)
         except PDBCodeError as error:
             click.echo(click.style(error, fg='white', bg='red', bold=True))
-            raise SystemExit() from error
+            raise click.Abort() from error
         try:
             app.process_structure(struc)
         except MissingInformationError as error:
             click.echo(click.style(error, fg='white', bg='red', bold=True))
-            raise SystemExit() from error
+            raise click.Abort() from error
 
         if not quiet:
             app.output_to_terminal()
@@ -209,4 +209,4 @@ def main(files: list[str],
 
 
 if __name__ == '__main__':
-    main()  # pylint: disable=no-value-for-parameter
+    main()

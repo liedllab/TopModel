@@ -30,7 +30,10 @@ as corresponding values."""
 
 def assign_chirality_amino_acid(residue: Residue.Residue) -> ChiralCenters:
     """Assign L/D label to residue."""
-    c_alpha = residue['CA'].get_vector().copy()
+    try:
+        c_alpha = residue['CA'].get_vector().copy()
+    except KeyError as error:
+        raise MissingInformationError from error
     atoms = {atom.name: (atom.get_vector() - c_alpha) for atom in residue}
 
     try:
