@@ -2,6 +2,8 @@
 
 A python script to check structure models.
 
+![Tests](https://github.com/liedllab/topmodel.git/actions/workflows/tests.yml/badge.svg)
+
 ## Installation
 
 ```bash
