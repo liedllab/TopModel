@@ -49,7 +49,7 @@ TopModel can be imported as a package. The package contains the small modules `c
 
 ```python
 import topmodel # or
-from topmodel import chirality, amide_bond, clashes
+from topmodel.check import chirality, amide_bond, clashes
 ```
 
 # Dependencies
