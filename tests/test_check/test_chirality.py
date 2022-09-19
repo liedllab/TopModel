@@ -86,12 +86,10 @@ class Test7SG5:
     struc = get_clean_structure(file)
     chiral = chirality.get_chirality(struc)
 
-    @pytest.mark.xfail
     def test_found_d_aminoacids_length(self):
         """right answer was checked using moe and cpptraj."""
         assert len(self.chiral[ChiralCenters.D]) == 4
 
-    @pytest.mark.xfail
     def test_found_d_aminacids(self):
         """correct answer was checked with moe and cpptraj."""
         found = {216, 218, 221, 222}
@@ -105,6 +103,8 @@ class Test7SG5:
             chirality.get_chirality(struc)
 
 
+# old implementation raised an error, which now no longer works
+@pytest.mark.xfail
 @pytest.mark.parametrize("get_structure", [get_plain_structure, get_clean_structure])
 def test_failure_missing_ha(get_structure):
     struc = get_structure('./data/modelled/sg_imgt.pdb')

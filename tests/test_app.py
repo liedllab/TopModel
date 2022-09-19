@@ -37,7 +37,7 @@ def test_output_exists(capsys):
                          [[file, 0],
                           ['./data/alanine_dipeptide/1.pdb', 0],
                           ['x,asd', 1],
-                          ['./data/fileformats/7SG5_model.pdb', 1]],
+                          ['./data/fileformats/7SG5_model.pdb', 0]],  # now works
                          )
 def test_app_main_correct_imput(file, exit_code):
     runner = CliRunner()
