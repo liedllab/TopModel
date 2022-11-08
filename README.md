@@ -35,8 +35,8 @@ determined by the priority of the side chains. By calculating the dot product of
 and a vector from the chiral center to the plane the relative orientation of the three atoms around 
 the chiral center, and thus the chirality, can be determined.
 
+$$\vec{n} =  \overrightarrow{A_3A_1} \times \overrightarrow{A_3A_2}$$
 $$
-\vec{n} =  \overrightarrow{A_3A_1} \times \overrightarrow{A_3A_2} \\
 chirality = \vec{n} \cdot \overrightarrow{A_3A_{center}} = 
         \begin{cases} 
         \mathbf{D}\, \text{if } > 0 \\
