@@ -132,3 +132,4 @@ dmypy.json
 *.swp
 .ipynb_checkpoints
 *.ipynb
+paper/

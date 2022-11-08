@@ -23,6 +23,7 @@ class Color(Enum):
     YELLOW = 'yellow'
     MAGENTA = 'magenta'
     CYAN = 'cyan'
+    GREEN = 'green'
 
 
 class App:
@@ -30,22 +31,22 @@ class App:
     def __init__(self, amides: bool, chiralities: bool, clashes: bool):
         self.funcs: list[Callable[[Structure], dict[Enum, list[StructuralIrregularity]]]] = []
         self.display: dict[Enum, Color] = {}
-        if amides:
-            self.funcs.append(check.get_amide_stereo)  # type: ignore[attr-defined]
-            self.display.update({
-                AmideBonds.CIS: Color.RED,
-                AmideBonds.CIS_PROLINE: Color.YELLOW,
-                AmideBonds.NON_PLANAR: Color.YELLOW,
-                })
         if chiralities:
             self.funcs.append(check.get_chirality)  # type: ignore[attr-defined]
             self.display.update(
                         {ChiralCenters.D: Color.MAGENTA},
                         )
+        if amides:
+            self.funcs.append(check.get_amide_stereo)  # type: ignore[attr-defined]
+            self.display.update({
+                AmideBonds.CIS: Color.RED,
+                AmideBonds.CIS_PROLINE: Color.GREEN,
+                AmideBonds.NON_PLANAR: Color.CYAN,
+                })
         if clashes:
             self.funcs.append(check.get_clashes)  # type: ignore[attr-defined]
             self.display.update(
-                        {Clashes.VDW: Color.CYAN},
+                        {Clashes.VDW: Color.YELLOW},
                         )
         try:
             self.width = min(80, os.get_terminal_size().columns)
