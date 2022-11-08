@@ -1,6 +1,6 @@
 # TopModel
 
-A python script to check structure models.
+A python script to quickly inspect and highlight issues in structure models.
 
 ![Tests](https://github.com/liedllab/TopModel/actions/workflows/tests.yml/badge.svg)
 
@@ -21,26 +21,43 @@ topmodel --help
 topmodel path/to/file*.pdb
 ```
 
-TopModel is a command line tool that checks the chiralities, the amide bonds and overall clashes of 
-the amino acids in a structure model. Optionally, the structure can be opened in PyMOL to visualize 
+TopModel is a command line tool that checks the chiralities, the amide bonds and overall VDW clashes
+in a structure model. Optionally, the structure can be opened in PyMOL to visualize 
 the issues found. For this PyMOL needs to be in PATH.
 
 ## Chirality
 
 TopModel can assign `L` and `D` to aminoacids. In the command-line interface (CLI) only the `D`
 aminoacids are shown.
+The chirality is computed by computing a normal vector to the plane defined by the triangle of the
+three highest priority chains around the chiral center. The direction of the normal vector is
+determined by the priority of the side chains. By calculating the dot product of the normal vector
+and a vector from the chiral center to the plane the relative orientation of the three atoms around 
+the chiral center, and thus the chirality, can be determined.
 
+$$
+\vec{n} =  \overrightarrow{A_3A_1} \times \overrightarrow{A_3A_2} \\
+chirality = \vec{n} \cdot \overrightarrow{A_3A_{center}} = 
+        \begin{cases} 
+        \mathbf{D}\, \text{if } > 0 \\
+        \mathbf{L}\, \text{if } < 0 
+        \end{cases}
+$$
+
+where the suffix denotes the priority of said Atom $A$.
 ## Amide bonds
 
-TopModel can assign `CIS` and `TRANS` to the amide bonds depending on the dihedral angle between
-CA-C-N-CA. Amide bonds that could not be assigned to either `CIS` or `TRANS` are labeled as
-`NON_PLANAR`.
+TopModel can assign `CIS` and `TRANS` to the amide bonds depending on the dihedral angle defined by
+$C_{\alpha}CNC_\alpha$.
+Amide bonds that could not be assigned to either `CIS` or `TRANS` are labeled as `NON_PLANAR`.
+
 Cis amide bonds to prolines are labelled separately as they occur more frequently.
 
 ## Clashes
 
-TopModel detects Van der Waals clashes once the distance between any atom of the sidechain is
-closer to any other atom than their combined Van der Waals radii.
+TopModel detects Van der Waals clashes by calculating the distance between all pair of atoms that
+are within 5 Å of each other. A clash is defined by:
+$$d_{AB} < r_A + r_B - 0.5Å$$
 
 # As a package
 
