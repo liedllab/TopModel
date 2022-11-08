@@ -29,13 +29,17 @@ the issues found. For this PyMOL needs to be in PATH.
 
 TopModel can assign `L` and `D` to aminoacids. In the command-line interface (CLI) only the `D`
 aminoacids are shown.
-The chirality is computed by computing a normal vector to the plane defined by the triangle of the
-three highest priority chains around the chiral center. The direction of the normal vector is
-determined by the priority of the side chains. By calculating the dot product of the normal vector
-and a vector from the chiral center to the plane the relative orientation of the three atoms around 
-the chiral center, and thus the chirality, can be determined.
+The chirality is computed by computing a normal vector $\vec{n}$ to the plane defined by the triangle 
+of the three highest priority atoms $A$ around the chiral center where the suffix denotes the
+priority. 
 
 $$\vec{n} =  \overrightarrow{A_3A_1} \times \overrightarrow{A_3A_2}$$
+
+The direction of the normal vector is determined by the orientation of the side chains. By 
+calculating the dot product of the normal vector and a vector from the chiral center to the plane the 
+relative orientation of the three atoms around the chiral center, and thus the chirality, can be 
+determined from the sign of the result.
+
 $$
 chirality = \vec{n} \cdot \overrightarrow{A_3A_{center}} = 
         \begin{cases} 
@@ -44,7 +48,6 @@ chirality = \vec{n} \cdot \overrightarrow{A_3A_{center}} =
         \end{cases}
 $$
 
-where the suffix denotes the priority of said Atom $A$.
 ## Amide bonds
 
 TopModel can assign `CIS` and `TRANS` to the amide bonds depending on the dihedral angle defined by
