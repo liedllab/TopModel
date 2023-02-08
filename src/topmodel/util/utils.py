@@ -62,9 +62,10 @@ class SingleIrregularity:
     """Handles irregularities that only depend on one residue."""
     def __init__(self, residue: Residue, score):
         self.code = seq1(residue.get_resname())
-        self.number = residue.get_full_id()[3][1]
-        self.letter = residue.get_full_id()[3][2].strip()
-        self.chain = residue.get_full_id()[2]
+        _, _, chain, (_, number, letter) = residue.get_full_id()
+        self.number = number
+        self.letter = letter.strip()
+        self.chain = chain
         self.score = score
 
     def to_pymol(self) -> str:
@@ -77,11 +78,15 @@ class SingleIrregularity:
 
     def __repr__(self):
         cls = self.__class__
-        return f'{cls.__name__}({self.code!r}, {self.number!r}{self.letter!r}, {self.chain!r}, {self.score!r})'
+        return (f'{cls.__name__}({self.code!r}, '
+                f'{self.number!r}{self.letter!r}, '
+                f'{self.chain!r}, {self.score!r})')
 
     def __str__(self):
         cls = self.__class__
-        return f'{cls.__name__}({self.code!r}, {self.number!r}{self.letter!r}, {self.chain!r})'
+        return (f'{cls.__name__}({self.code!r}, '
+                f'{self.number!r}{self.letter!r}, '
+                f'{self.chain!r})')
 
 
 class BlockSTDOUT:
