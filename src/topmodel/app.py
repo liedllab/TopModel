@@ -1,7 +1,6 @@
 #! /usr/bin/env python3
 """Entry point for CLI"""
 from __future__ import annotations
-import math
 from enum import Enum
 from pathlib import Path
 import os
@@ -9,10 +8,13 @@ import subprocess
 import tempfile
 import textwrap
 from typing import Callable
+
 from Bio.PDB.Structure import Structure
 import click
+
 from topmodel import check
-from topmodel.util.utils import ChiralCenters, AmideBonds, Clashes, StructuralIrregularity
+from topmodel.util.utils import ChiralCenters, AmideBonds
+from topmodel.util.utils import Clashes, StructuralIrregularity
 from topmodel.util.errors import MissingInformationError, PDBCodeError
 from topmodel.util.parser import get_structure
 
@@ -143,7 +145,7 @@ the structure."""
     def compute_score(self) -> None:
         """Assign a score based on the errors in a Structure."""
         raw_score = len(self.data[Clashes.VDW])
-        score = 30*raw_score // math.sqrt(self.n_res)
+        score = 30*raw_score // self.n_res
         self._score = int(score)
         return None
 
