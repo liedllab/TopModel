@@ -7,6 +7,11 @@ A python script to quickly inspect and highlight issues in structure models.
 ## Installation
 
 ```bash
+pip install protein-topmodel
+```
+
+Or alternatively from GitHUB:
+```bash
 pip install git+https://github.com/liedllab/topmodel.git
 ```
 
