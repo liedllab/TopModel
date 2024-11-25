@@ -30,6 +30,17 @@ TopModel is a command line tool that checks the chiralities, the amide bonds and
 in a structure model. Optionally, the structure can be opened in PyMOL to visualize 
 the issues found. For this PyMOL needs to be in PATH.
 
+## License Info
+
+When using the code in a publication, please cite:
+
+
+Fernández-Quintero, M. L., Kokot, J., Waibl, F., Fischer, A. L. M., Quoika, P. K., Deane, C. M., 
+& Liedl, K. R. (2023). Challenges in antibody structure prediction. mAbs, 15(1). 
+[https://doi.org/10.1080/19420862.2023.2175319](https://doi.org/10.1080/19420862.2023.2175319)
+
+
+# Background
 ## Chirality
 
 TopModel can assign `L` and `D` to aminoacids. In the command-line interface (CLI) only the `D`
